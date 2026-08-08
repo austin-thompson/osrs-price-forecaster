@@ -19,10 +19,10 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 
 ### Phase 6 — Analysis workflows and explanation depth
 
-- Analysis-summary scores are wrong until the Phase 5 recommendation wiring is fixed (inherited dependency).
-- The contract boundary between `/analysis-summary` and the `/summary`, `/signal`, `/explanation` endpoints is undocumented; risk of silent drift if either evolves independently.
-- No multi-item cohort or comparison endpoint.
-- No benchmark-history view showing how signal or MAE has trended over time for an item/horizon.
+- The single-item analysis-summary endpoint is now working against the synthesis layer.
+- A new cohort comparison endpoint is available at `/api/v1/cohort-comparison` for side-by-side multi-item signal views.
+- The contract boundary between `/analysis-summary`, `/summary`, `/signal`, and `/explanation` remains something to document more explicitly as the phase evolves.
+- Benchmark-history views are still pending and remain a future enhancement.
 
 ### Phase 7 — Reliability and observability
 
@@ -45,7 +45,7 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 | 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Not started |
 | 3    | Phase 5 ranking filters + champion model population | Step 1        | Completed   |
 | 4    | Phase 8 watchlist fetch and delete endpoints        | Nothing       | Not started |
-| 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Not started |
+| 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Completed   |
 
 ### Step 1 rationale
 

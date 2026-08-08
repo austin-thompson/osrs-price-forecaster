@@ -203,6 +203,23 @@ class AnalysisSummaryResponse(BaseModel):
     freshness_minutes: int | None
 
 
+class CohortComparisonItemResponse(BaseModel):
+    item_id: int
+    signal_label: str
+    score: Decimal
+    reason_codes: list[str]
+    guardrail_status: str
+    champion_model_name: str | None
+    champion_model_version: str | None
+    liquidity_status: str
+    freshness_status: str
+
+
+class CohortComparisonResponse(BaseModel):
+    horizon_hours: int
+    items: list[CohortComparisonItemResponse]
+
+
 class WatchlistResponse(BaseModel):
     id: int
     name: str
@@ -662,6 +679,56 @@ async def analysis_summary(
         interval_width=_get_value(explanation, "interval_width"),
         freshness_minutes=_get_value(explanation, "freshness_minutes"),
     )
+
+
+@router.get("/cohort-comparison", response_model=CohortComparisonResponse)
+async def cohort_comparison(
+    item_ids: list[int] = Query(default_factory=list, alias="item_ids"),
+    horizon_hours: int = Query(default=1, ge=1),
+    session: AsyncSession = Depends(get_db_session),
+) -> CohortComparisonResponse:
+    if not item_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must not be empty")
+    if any(item_id <= 0 for item_id in item_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive")
+
+    settings = get_settings()
+    if horizon_hours not in settings.forecast_horizons_hours:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"horizon_hours must be one of {settings.forecast_horizons_hours}",
+        )
+
+    service = SynthesisService(
+        forecast_repository=SqlAlchemyForecastRepository(session),
+        evaluation_repository=SqlAlchemyModelEvaluationRepository(session),
+        selection_repository=SqlAlchemyModelSelectionRepository(session),
+    )
+
+    def _get_value(obj: Any, attr: str, default: Any = None) -> Any:
+        if isinstance(obj, dict):
+            return obj.get(attr, default)
+        return getattr(obj, attr, default)
+
+    items: list[CohortComparisonItemResponse] = []
+    for item_id in item_ids:
+        summary = await service.build_summary(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
+        signal = await service.build_signal(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
+        items.append(
+            CohortComparisonItemResponse(
+                item_id=item_id,
+                signal_label=_get_value(signal, "signal_label", "avoid"),
+                score=_get_value(signal, "score", Decimal("0")),
+                reason_codes=_get_value(signal, "reason_codes", []),
+                guardrail_status=_get_value(signal, "guardrail_status", "warn"),
+                champion_model_name=_get_value(summary, "champion_model_name"),
+                champion_model_version=_get_value(summary, "champion_model_version"),
+                liquidity_status=_get_value(summary, "liquidity_status", "unknown"),
+                freshness_status=_get_value(summary, "freshness_status", "stale"),
+            )
+        )
+
+    return CohortComparisonResponse(horizon_hours=horizon_hours, items=items)
 
 
 @router.get("/operational-summary", response_model=OperationalSummaryResponse)

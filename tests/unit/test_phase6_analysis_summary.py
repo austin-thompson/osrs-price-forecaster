@@ -88,3 +88,56 @@ def test_analysis_summary_endpoint_returns_combined_insights(monkeypatch: Any) -
     assert payload["liquidity_status"] == "healthy"
     assert payload["freshness_status"] == "fresh"
     assert payload["reason_codes"] == ["stable_drift"]
+
+
+def test_cohort_comparison_endpoint_returns_side_by_side_signals(monkeypatch: Any) -> None:
+    summary = {
+        "item_id": 4151,
+        "horizon_hours": 1,
+        "signal_label": "stable",
+        "score": Decimal("0.85"),
+        "reason_codes": ["stable_drift"],
+        "guardrail_status": "pass",
+        "champion_model_name": "naive_last",
+        "champion_model_version": "1.0.0",
+        "liquidity_status": "healthy",
+        "freshness_status": "fresh",
+    }
+    signal = {
+        "item_id": 4151,
+        "horizon_hours": 1,
+        "signal_label": "stable",
+        "score": Decimal("0.85"),
+        "reason_codes": ["stable_drift"],
+        "guardrail_status": "pass",
+    }
+    explanation = {
+        "item_id": 4151,
+        "horizon_hours": 1,
+        "champion_model_name": "naive_last",
+        "champion_model_version": "1.0.0",
+        "metric_mae": Decimal("12.5"),
+        "metric_directional_accuracy": Decimal("0.75"),
+        "liquidity_observations_dropped": 1,
+        "drift_ratio": Decimal("0.1"),
+        "interval_width": Decimal("25"),
+        "freshness_minutes": 45,
+        "reason_codes": ["stable_drift"],
+    }
+
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.SynthesisService",
+        lambda **kwargs: FakeSynthesisService(summary, signal, explanation),
+    )
+
+    app = _build_test_app()
+    app.dependency_overrides[get_db_session] = lambda: iter([FakeSession()])
+    client = TestClient(app)
+
+    response = client.get("/api/v1/cohort-comparison?item_ids=4151&item_ids=11840&horizon_hours=1")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["horizon_hours"] == 1
+    assert len(payload["items"]) == 2
+    assert payload["items"][0]["item_id"] == 4151
+    assert payload["items"][0]["signal_label"] == "stable"

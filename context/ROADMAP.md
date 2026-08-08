@@ -194,7 +194,7 @@ Scope:
 Richer item summaries, cohort comparisons, benchmark history, and explanation narratives for signals, drift, liquidity, and model selection.
 
 Deliverables:
-Comparison endpoints, benchmark-history views, and improved synthesis explanations for downstream consumers.
+Comparison endpoints, a cohort comparison view, benchmark-history views, and improved synthesis explanations for downstream consumers.
 
 Acceptance criteria:
 A user can inspect an item or cohort and quickly understand its current signal, recent performance, and supporting evidence.
