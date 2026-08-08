@@ -12,10 +12,10 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 
 ### Phase 5 — Portfolio ranking and watchlists
 
-- `RecommendationService.list_recommendations` returns hardcoded `score=0.85` and `signal_label="stable"` for every item. It does not call `SynthesisService`. This is the root cause of incorrect data across all ranking, recommendation, and analysis surfaces.
-- `champion_model_name` and `champion_model_version` are always `None` in ranking and recommendation responses; the selection repository is not queried.
-- No filter query params on `GET /api/v1/rankings` — no `signal_label`, `liquidity_status`, `drift_state`, or `top_n` support.
-- No `GET /api/v1/watchlist/{id}` or `DELETE /api/v1/watchlist/{id}` endpoints.
+- Phase 5 recommendation output is now wired to the synthesis layer, so ranking and recommendation responses derive their score, signal label, and reason codes from real synthesis data rather than hardcoded values.
+- Champion model metadata is now populated from the selection repository for recommendation and ranking responses.
+- `GET /api/v1/rankings` and `GET /api/v1/recommendations` now support filtering by `signal_label`, `liquidity_status`, `drift_state`, and `top_n`.
+- Remaining work for this phase is the watchlist CRUD completion: `GET /api/v1/watchlist/{id}` and `DELETE /api/v1/watchlist/{id}` are still pending.
 
 ### Phase 6 — Analysis workflows and explanation depth
 
@@ -41,15 +41,15 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 
 | Step | Work item                                           | Blocking      | Status      |
 | ---- | --------------------------------------------------- | ------------- | ----------- |
-| 1    | Wire `RecommendationService` to `SynthesisService`  | Steps 3 and 5 | Not started |
+| 1    | Wire `RecommendationService` to `SynthesisService`  | Steps 3 and 5 | Completed   |
 | 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Not started |
-| 3    | Phase 5 ranking filters + champion model population | Step 1        | Not started |
+| 3    | Phase 5 ranking filters + champion model population | Step 1        | Completed   |
 | 4    | Phase 8 watchlist fetch and delete endpoints        | Nothing       | Not started |
 | 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Not started |
 
 ### Step 1 rationale
 
-Every ranking, recommendation, and analysis surface returns synthetic data until `RecommendationService` delegates to `SynthesisService.build_signal`. This is the highest-leverage fix in the cycle.
+The initial hardcoded recommendation behavior was the highest-leverage blocker for the cycle. Once `RecommendationService` delegates to the synthesis layer, ranking, recommendation, and analysis surfaces can expose consistent signal data.
 
 ### Step 2 rationale
 
@@ -57,7 +57,7 @@ Self-contained and unblocked. Query `price_observations` for the most recent `in
 
 ### Step 3 rationale
 
-Once scores are real, filter params (`signal_label`, `liquidity_status`, `drift_state`, `top_n`) on `/api/v1/rankings` become meaningful. Also fixes `champion_model_name` by querying the selection repository.
+Once scores are real, filter params (`signal_label`, `liquidity_status`, `drift_state`, `top_n`) on `/api/v1/rankings` and `/api/v1/recommendations` become meaningful. This also fixes `champion_model_name` by querying the selection repository.
 
 ### Step 4 rationale
 

@@ -28,6 +28,28 @@ from osrs_price_forecaster.infrastructure.database.repositories import (
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 
 
+def _get_recommendation_value(item: Any, attr: str, default: Any = None) -> Any:
+    if isinstance(item, dict):
+        return item.get(attr, default)
+    return getattr(item, attr, default)
+
+
+def _matches_recommendation_filters(
+    item: Any,
+    *,
+    signal_label: str | None,
+    liquidity_status: str | None,
+    drift_state: str | None,
+) -> bool:
+    if signal_label is not None and _get_recommendation_value(item, "signal_label") != signal_label:
+        return False
+    if liquidity_status is not None and _get_recommendation_value(item, "liquidity_status") != liquidity_status:
+        return False
+    if drift_state is not None and _get_recommendation_value(item, "drift_state") != drift_state:
+        return False
+    return True
+
+
 @dataclass(slots=True)
 class OperationalSummary:
     generated_at: datetime
@@ -703,6 +725,10 @@ async def create_watchlist(
 async def recommendations(
     horizon_hours: int = Query(default=1, ge=1),
     limit: int = Query(default=100, ge=1, le=500),
+    signal_label: str | None = Query(default=None),
+    liquidity_status: str | None = Query(default=None),
+    drift_state: str | None = Query(default=None),
+    top_n: int | None = Query(default=None, ge=1, le=500),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[RecommendationResponse]:
     settings = get_settings()
@@ -719,18 +745,30 @@ async def recommendations(
         item_repository=SqlAlchemyItemRepository(session),
     )
     items = await service.list_recommendations(horizon_hours=horizon_hours, limit=limit)
+    filtered_items = [
+        item
+        for item in items
+        if _matches_recommendation_filters(
+            item,
+            signal_label=signal_label,
+            liquidity_status=liquidity_status,
+            drift_state=drift_state,
+        )
+    ]
+    if top_n is not None:
+        filtered_items = filtered_items[:top_n]
     return [
         RecommendationResponse(
-            item_id=item["item_id"] if isinstance(item, dict) else item.item_id,
-            horizon_hours=item["horizon_hours"] if isinstance(item, dict) else item.horizon_hours,
-            signal_label=item["signal_label"] if isinstance(item, dict) else item.signal_label,
-            score=item["score"] if isinstance(item, dict) else item.score,
-            reason_codes=item["reason_codes"] if isinstance(item, dict) else item.reason_codes,
-            guardrail_status=item["guardrail_status"] if isinstance(item, dict) else item.guardrail_status,
-            champion_model_name=item["champion_model_name"] if isinstance(item, dict) else item.champion_model_name,
-            champion_model_version=item["champion_model_version"] if isinstance(item, dict) else item.champion_model_version,
+            item_id=_get_recommendation_value(item, "item_id"),
+            horizon_hours=_get_recommendation_value(item, "horizon_hours"),
+            signal_label=_get_recommendation_value(item, "signal_label"),
+            score=_get_recommendation_value(item, "score"),
+            reason_codes=_get_recommendation_value(item, "reason_codes", []),
+            guardrail_status=_get_recommendation_value(item, "guardrail_status"),
+            champion_model_name=_get_recommendation_value(item, "champion_model_name"),
+            champion_model_version=_get_recommendation_value(item, "champion_model_version"),
         )
-        for item in items
+        for item in filtered_items
     ]
 
 
@@ -738,6 +776,10 @@ async def recommendations(
 async def rankings(
     horizon_hours: int = Query(default=1, ge=1),
     limit: int = Query(default=100, ge=1, le=500),
+    signal_label: str | None = Query(default=None),
+    liquidity_status: str | None = Query(default=None),
+    drift_state: str | None = Query(default=None),
+    top_n: int | None = Query(default=None, ge=1, le=500),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[RankingResponse]:
     settings = get_settings()
@@ -754,21 +796,36 @@ async def rankings(
         item_repository=SqlAlchemyItemRepository(session),
     )
     items = await service.list_recommendations(horizon_hours=horizon_hours, limit=limit)
-    ranked_items = sorted(items, key=lambda item: item["score"] if isinstance(item, dict) else item.score, reverse=True)
+    filtered_items = [
+        item
+        for item in items
+        if _matches_recommendation_filters(
+            item,
+            signal_label=signal_label,
+            liquidity_status=liquidity_status,
+            drift_state=drift_state,
+        )
+    ]
+    ranked_items = sorted(
+        filtered_items,
+        key=lambda item: _get_recommendation_value(item, "score"),
+        reverse=True,
+    )
+    effective_limit = limit if top_n is None else min(limit, top_n)
 
     responses: list[RankingResponse] = []
-    for index, item in enumerate(ranked_items[:limit], start=1):
+    for index, item in enumerate(ranked_items[:effective_limit], start=1):
         responses.append(
             RankingResponse(
-                item_id=item["item_id"] if isinstance(item, dict) else item.item_id,
-                horizon_hours=item["horizon_hours"] if isinstance(item, dict) else item.horizon_hours,
+                item_id=_get_recommendation_value(item, "item_id"),
+                horizon_hours=_get_recommendation_value(item, "horizon_hours"),
                 rank=index,
-                signal_label=item["signal_label"] if isinstance(item, dict) else item.signal_label,
-                score=item["score"] if isinstance(item, dict) else item.score,
-                reason_codes=item["reason_codes"] if isinstance(item, dict) else item.reason_codes,
-                guardrail_status=item["guardrail_status"] if isinstance(item, dict) else item.guardrail_status,
-                champion_model_name=item["champion_model_name"] if isinstance(item, dict) else item.champion_model_name,
-                champion_model_version=item["champion_model_version"] if isinstance(item, dict) else item.champion_model_version,
+                signal_label=_get_recommendation_value(item, "signal_label"),
+                score=_get_recommendation_value(item, "score"),
+                reason_codes=_get_recommendation_value(item, "reason_codes", []),
+                guardrail_status=_get_recommendation_value(item, "guardrail_status"),
+                champion_model_name=_get_recommendation_value(item, "champion_model_name"),
+                champion_model_version=_get_recommendation_value(item, "champion_model_version"),
             )
         )
     return responses

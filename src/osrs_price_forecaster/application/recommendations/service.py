@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from osrs_price_forecaster.application.synthesis.service import SynthesisService
 from osrs_price_forecaster.domain.repositories import ForecastRepository, ModelEvaluationRepository, ModelSelectionRepository
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 
@@ -15,6 +16,8 @@ class RecommendationItem:
     guardrail_status: str
     champion_model_name: str | None
     champion_model_version: str | None
+    liquidity_status: str | None = None
+    drift_state: str | None = None
 
 
 @dataclass(slots=True)
@@ -30,20 +33,30 @@ class RecommendationService:
         if self.item_repository is not None:
             items = await self.item_repository.list_items(limit=limit, offset=0)
         if not items:
-            items = []
+            return []
+
+        synthesis_service = SynthesisService(
+            forecast_repository=self.forecast_repository,
+            evaluation_repository=self.evaluation_repository,
+            selection_repository=self.selection_repository,
+        )
 
         results: list[RecommendationItem] = []
         for item in items:
+            summary = await synthesis_service.build_summary(item_id=item.item_id, horizon=horizon)
+            selection = await self.selection_repository.latest_selection(item_id=item.item_id, horizon=horizon)
             results.append(
                 RecommendationItem(
                     item_id=item.item_id,
                     horizon_hours=horizon.hours,
-                    signal_label="stable",
-                    score=Decimal("0.85"),
-                    reason_codes=["stable_drift"],
-                    guardrail_status="pass",
-                    champion_model_name=None,
-                    champion_model_version=None,
+                    signal_label=summary.signal_label,
+                    score=summary.score,
+                    reason_codes=summary.reason_codes,
+                    guardrail_status="pass" if summary.signal_label == "stable" else "warn",
+                    champion_model_name=selection.selected_model_name if selection is not None else None,
+                    champion_model_version=selection.selected_model_version if selection is not None else None,
+                    liquidity_status=summary.liquidity_status,
+                    drift_state=summary.drift_state,
                 )
             )
         return sorted(results, key=lambda item: item.score, reverse=True)[:limit]
