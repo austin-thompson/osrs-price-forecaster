@@ -59,7 +59,23 @@ Metrics and tracing are planned for later phases when needed.
 
 ## CI/CD posture
 
-CI/CD is intentionally deferred while the project is local-first and single-developer. Manual Git tags serve as lightweight release markers in the interim.
+CI/CD is intentionally deferred while the project is local-first and single-developer. Manual Git tags with GitHub Releases serve as lightweight release markers in the interim.
+
+## Release workflow
+
+Tag and publish a release only after a squash-merge into main:
+
+```bash
+git tag v0.x.0-alpha
+git push origin v0.x.0-alpha
+gh release create v0.x.0-alpha --title "v0.x.0-alpha" --notes "Brief description of what this cycle delivered."
+```
+
+Rules:
+
+- Never tag a feature branch or an intermediate commit on main.
+- Always create a GitHub Release from the tag immediately after pushing it — a raw tag with no release is incomplete.
+- Release notes should summarise what the cycle delivered at a cycle level, not commit by commit.
 
 A GitHub Actions workflow should be introduced when:
 

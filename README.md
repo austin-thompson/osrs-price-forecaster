@@ -113,7 +113,13 @@ When making changes, follow these expectations to keep the repository consistent
   - docs: documentation-only changes
   - chore: maintenance, tooling, or non-functional updates
     Examples: "feat: add recommendation endpoint", "fix: correct freshness status calculation", or "docs: update contribution guidelines".
-- For milestone or preview releases while CI/CD is still being set up, use a manual Git tag in a simple semver-style format on the relevant commit. Treat this as a lightweight human-managed release marker until automated release workflows are in place.
+- For milestone or preview releases, tag only after a squash-merge into main. Use a semver-style tag and create a matching GitHub Release immediately after:
+  ```bash
+  git tag v0.x.0-alpha
+  git push origin v0.x.0-alpha
+  gh release create v0.x.0-alpha --title "v0.x.0-alpha" --notes "Brief description of what this cycle delivered."
+  ```
+  Do not tag feature branches or intermediate commits on main.
 
 ## Data-source attribution
 
