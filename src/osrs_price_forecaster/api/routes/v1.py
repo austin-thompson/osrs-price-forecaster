@@ -815,6 +815,35 @@ async def create_watchlist(
     return WatchlistResponse(id=watchlist.id, name=watchlist.name, item_ids=watchlist.item_ids)
 
 
+@router.get("/watchlists/{watchlist_id}", response_model=WatchlistResponse)
+async def get_watchlist(
+    watchlist_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> WatchlistResponse:
+    if watchlist_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+
+    repository = SqlAlchemySavedWatchlistRepository(session)
+    watchlist = await repository.get_watchlist(watchlist_id)
+    if watchlist is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="watchlist not found")
+    return WatchlistResponse(id=watchlist.id, name=watchlist.name, item_ids=watchlist.item_ids)
+
+
+@router.delete("/watchlists/{watchlist_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_watchlist(
+    watchlist_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    if watchlist_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+
+    repository = SqlAlchemySavedWatchlistRepository(session)
+    deleted = await repository.delete_watchlist(watchlist_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="watchlist not found")
+
+
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def recommendations(
     horizon_hours: int = Query(default=1, ge=1),

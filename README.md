@@ -86,7 +86,7 @@ The project now includes the first analyst-facing MVP slices for the later roadm
 - Phase 5: ranking and recommendation endpoints now expose synthesis-backed scores, signal labels, reason codes, and champion-model metadata, with filters for signal, liquidity, drift, and top-N selection.
 - Phase 6: analysis-summary and cohort-comparison endpoints surface current signal state, supporting evidence, and side-by-side multi-item comparisons.
 - Phase 7: the operational-summary endpoint now reports service health, freshness status, warnings, and the latest ingested observation timestamp from persisted price data.
-- Phase 8: watchlists can be created and listed through persisted endpoints for simple saved-item workflows.
+- Phase 8: watchlists can now be created, listed, fetched, and deleted through persisted endpoints for simple saved-item workflows.
 
 ## Remaining work in the Phase 5-8 MVP implementation
 
@@ -95,7 +95,7 @@ These slices remain intentionally narrow, but the core analyst-facing contract i
 - Phase 5: continue expanding portfolio-style ranking behavior and richer watchlist workflows.
 - Phase 6: add deeper comparison and benchmark-history context where it improves analyst workflows.
 - Phase 7: keep observability coverage aligned with ingestion health as the data pipeline evolves.
-- Phase 8: add fetch/delete support for watchlists plus saved filters, horizon preferences, and local annotations while keeping the experience single-user and local-first.
+- Phase 8: add saved filters, horizon preferences, and local annotations while keeping the experience single-user and local-first.
 
 ## Contribution guidelines
 

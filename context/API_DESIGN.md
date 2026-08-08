@@ -50,7 +50,10 @@ Phase 4+ decision routes:
   - Lists saved watchlists.
 - POST /api/v1/watchlists
   - Creates a saved watchlist with a name and item ID list.
-- Future: GET /api/v1/watchlists/{id} and DELETE /api/v1/watchlists/{id} remain planned for the broader Phase 8 scope.
+- GET /api/v1/watchlists/{watchlist_id}
+  - Returns a saved watchlist by ID.
+- DELETE /api/v1/watchlists/{watchlist_id}
+  - Deletes a saved watchlist by ID.
 
 Phase 6 analysis routes (cycle 2):
 

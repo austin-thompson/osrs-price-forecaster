@@ -24,6 +24,19 @@ class FakeWatchlistRepository:
         self._watchlists.append(watchlist)
         return watchlist
 
+    async def get_watchlist(self, watchlist_id: int) -> Watchlist | None:
+        for watchlist in self._watchlists:
+            if watchlist.id == watchlist_id:
+                return watchlist
+        return None
+
+    async def delete_watchlist(self, watchlist_id: int) -> bool:
+        for index, watchlist in enumerate(self._watchlists):
+            if watchlist.id == watchlist_id:
+                del self._watchlists[index]
+                return True
+        return False
+
 
 def _build_test_app() -> FastAPI:
     app = FastAPI()
@@ -55,3 +68,31 @@ def test_watchlist_endpoints_persist_and_list_saved_items(monkeypatch: Any) -> N
     assert list_response.status_code == 200
     assert list_response.json()[0]["name"] == "focus-list"
     assert list_response.json()[0]["item_ids"] == [4151, 11840]
+
+
+def test_watchlist_get_and_delete_endpoints(monkeypatch: Any) -> None:
+    repository = FakeWatchlistRepository()
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.SqlAlchemySavedWatchlistRepository",
+        lambda session: repository,
+    )
+
+    app = _build_test_app()
+    app.dependency_overrides[get_db_session] = lambda: iter([FakeSession()])
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/watchlists",
+        json={"name": "focus-list", "item_ids": [4151, 11840]},
+    )
+    watchlist_id = create_response.json()["id"]
+
+    get_response = client.get(f"/api/v1/watchlists/{watchlist_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == watchlist_id
+
+    delete_response = client.delete(f"/api/v1/watchlists/{watchlist_id}")
+    assert delete_response.status_code == 204
+
+    missing_response = client.get(f"/api/v1/watchlists/{watchlist_id}")
+    assert missing_response.status_code == 404

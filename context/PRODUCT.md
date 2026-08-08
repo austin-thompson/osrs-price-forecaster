@@ -40,7 +40,7 @@ The current implementation has completed the initial MVP slices for the later an
 - Phase 5: ranking and recommendation outputs now expose synthesis-backed scores, signal labels, reason codes, and champion-model metadata for requested horizons.
 - Phase 6: analysis-summary and cohort-comparison endpoints now provide compact signal views and side-by-side multi-item comparisons.
 - Phase 7: the operational-summary endpoint now exposes service health, freshness status, warnings, and the latest ingested observation timestamp from persisted price data.
-- Phase 8: watchlists can now be created and listed through a simple persisted endpoint pair.
+- Phase 8: watchlists can now be created, listed, fetched, and deleted through a simple persisted endpoint set.
 
 What remains beyond these first slices:
 

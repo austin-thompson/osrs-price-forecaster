@@ -33,19 +33,19 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 
 ### Phase 8 — Personalization and saved analysis
 
-- `GET /api/v1/watchlist/{id}` is missing; a saved watchlist cannot be fetched individually.
-- `DELETE /api/v1/watchlist/{id}` is missing; watchlists cannot be removed.
-- CRUD surface is incomplete: create and list exist but fetch and delete do not.
+- `GET /api/v1/watchlists/{watchlist_id}` now returns a saved watchlist by ID.
+- `DELETE /api/v1/watchlists/{watchlist_id}` now removes a saved watchlist when it exists.
+- The CRUD surface for the initial watchlist MVP is now in place: create, list, get, and delete are all supported.
 
 ## Order of operations
 
-| Step | Work item                                           | Blocking      | Status      |
-| ---- | --------------------------------------------------- | ------------- | ----------- |
-| 1    | Wire `RecommendationService` to `SynthesisService`  | Steps 3 and 5 | Completed   |
-| 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Completed   |
-| 3    | Phase 5 ranking filters + champion model population | Step 1        | Completed   |
-| 4    | Phase 8 watchlist fetch and delete endpoints        | Nothing       | Not started |
-| 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Completed   |
+| Step | Work item                                           | Blocking      | Status    |
+| ---- | --------------------------------------------------- | ------------- | --------- |
+| 1    | Wire `RecommendationService` to `SynthesisService`  | Steps 3 and 5 | Completed |
+| 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Completed |
+| 3    | Phase 5 ranking filters + champion model population | Step 1        | Completed |
+| 4    | Phase 8 watchlist fetch and delete endpoints        | Nothing       | Completed |
+| 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Completed |
 
 ### Step 1 rationale
 
