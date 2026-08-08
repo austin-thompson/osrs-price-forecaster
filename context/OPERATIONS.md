@@ -28,6 +28,7 @@
 
 - /health/live for process liveness.
 - /health/ready for dependency readiness.
+- /api/v1/operational-summary for ingestion freshness and service health status.
 
 ## Graceful shutdown
 
@@ -56,3 +57,31 @@ All runtime options are environment-driven through pydantic-settings.
 ## Future observability
 
 Metrics and tracing are planned for later phases when needed.
+
+## CI/CD posture
+
+CI/CD is intentionally deferred while the project is local-first and single-developer. Manual Git tags with GitHub Releases serve as lightweight release markers in the interim.
+
+## Release workflow
+
+Tag and publish a release only after a squash-merge into main:
+
+```bash
+git tag v0.x.0-alpha
+git push origin v0.x.0-alpha
+gh release create v0.x.0-alpha --title "v0.x.0-alpha" --notes "Brief description of what this cycle delivered."
+```
+
+Rules:
+
+- Never tag a feature branch or an intermediate commit on main.
+- Always create a GitHub Release from the tag immediately after pushing it — a raw tag with no release is incomplete.
+- Release notes should summarise what the cycle delivered at a cycle level, not commit by commit.
+
+A GitHub Actions workflow should be introduced when:
+
+- The unit and integration test suite is stable enough to gate pull requests automatically.
+- The Docker build is confirmed reproducible across environments.
+- There is a clear deployment target (even a simple one) that benefits from automated delivery.
+
+When that point is reached, the workflow should cover at minimum: dependency install, lint, typecheck, and the full test suite. A Docker build check and migration dry-run would be the next logical additions. A dedicated CI/CD context document can be created at that point to record workflow design decisions.

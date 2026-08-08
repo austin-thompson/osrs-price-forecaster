@@ -1,4 +1,4 @@
-# API Design (Phase 1 Plan)
+# API Design
 
 ## Versioning
 
@@ -6,7 +6,9 @@
 - Additive changes preferred.
 - Breaking changes require new major API version.
 
-## Planned routes
+## Current API surface
+
+This snapshot reflects the implemented routes through Cycle 2 and the planned Cycle 3 extensions.
 
 Health (Phase 0 implementation):
 
@@ -43,9 +45,30 @@ Phase 4+ decision routes:
 
 - GET /api/v1/recommendations
   - Returns ranked items for a horizon with signal label, score, reason codes, and guardrail status.
-  - Suggested labels: stable, caution, avoid.
+  - Scores are derived from SynthesisService rather than hardcoded values.
 - GET /api/v1/rankings
-- GET /api/v1/watchlist
+  - Supports filter params: signal_label, liquidity_status, drift_state, and top_n.
+- GET /api/v1/watchlists
+  - Lists saved watchlists.
+- POST /api/v1/watchlists
+  - Creates a saved watchlist with a name and item ID list.
+- GET /api/v1/watchlists/{watchlist_id}
+  - Returns a saved watchlist by ID.
+- DELETE /api/v1/watchlists/{watchlist_id}
+  - Deletes a saved watchlist by ID.
+
+Phase 6 analysis routes (Cycle 2):
+
+- GET /api/v1/items/{item_id}/analysis-summary
+  - Returns an analyst-oriented summary of an item’s current signal, supporting evidence, and recent context.
+- GET /api/v1/cohort-comparison
+  - Accepts a list of item IDs and returns their current signal state side by side for a requested horizon.
+
+Phase 7 operational routes:
+
+- GET /api/v1/operational-summary
+  - Returns generated_at, service_status, freshness_status, warnings, and latest_ingested_at.
+  - Freshness is derived from the newest persisted price observation timestamp.
 
 ## Response conventions
 

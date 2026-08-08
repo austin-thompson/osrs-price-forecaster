@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from osrs_price_forecaster.api.dependencies import get_db_session
@@ -26,6 +26,28 @@ from osrs_price_forecaster.infrastructure.database.repositories import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
+
+
+def _get_recommendation_value(item: Any, attr: str, default: Any = None) -> Any:
+    if isinstance(item, dict):
+        return item.get(attr, default)
+    return getattr(item, attr, default)
+
+
+def _matches_recommendation_filters(
+    item: Any,
+    *,
+    signal_label: str | None,
+    liquidity_status: str | None,
+    drift_state: str | None,
+) -> bool:
+    if signal_label is not None and _get_recommendation_value(item, "signal_label") != signal_label:
+        return False
+    if liquidity_status is not None and _get_recommendation_value(item, "liquidity_status") != liquidity_status:
+        return False
+    if drift_state is not None and _get_recommendation_value(item, "drift_state") != drift_state:
+        return False
+    return True
 
 
 @dataclass(slots=True)
@@ -179,6 +201,23 @@ class AnalysisSummaryResponse(BaseModel):
     drift_ratio: Decimal | None
     interval_width: Decimal | None
     freshness_minutes: int | None
+
+
+class CohortComparisonItemResponse(BaseModel):
+    item_id: int
+    signal_label: str
+    score: Decimal
+    reason_codes: list[str]
+    guardrail_status: str
+    champion_model_name: str | None
+    champion_model_version: str | None
+    liquidity_status: str
+    freshness_status: str
+
+
+class CohortComparisonResponse(BaseModel):
+    horizon_hours: int
+    items: list[CohortComparisonItemResponse]
 
 
 class WatchlistResponse(BaseModel):
@@ -642,6 +681,56 @@ async def analysis_summary(
     )
 
 
+@router.get("/cohort-comparison", response_model=CohortComparisonResponse)
+async def cohort_comparison(
+    item_ids: list[int] = Query(default_factory=list, alias="item_ids"),
+    horizon_hours: int = Query(default=1, ge=1),
+    session: AsyncSession = Depends(get_db_session),
+) -> CohortComparisonResponse:
+    if not item_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must not be empty")
+    if any(item_id <= 0 for item_id in item_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive")
+
+    settings = get_settings()
+    if horizon_hours not in settings.forecast_horizons_hours:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"horizon_hours must be one of {settings.forecast_horizons_hours}",
+        )
+
+    service = SynthesisService(
+        forecast_repository=SqlAlchemyForecastRepository(session),
+        evaluation_repository=SqlAlchemyModelEvaluationRepository(session),
+        selection_repository=SqlAlchemyModelSelectionRepository(session),
+    )
+
+    def _get_value(obj: Any, attr: str, default: Any = None) -> Any:
+        if isinstance(obj, dict):
+            return obj.get(attr, default)
+        return getattr(obj, attr, default)
+
+    items: list[CohortComparisonItemResponse] = []
+    for item_id in item_ids:
+        summary = await service.build_summary(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
+        signal = await service.build_signal(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
+        items.append(
+            CohortComparisonItemResponse(
+                item_id=item_id,
+                signal_label=_get_value(signal, "signal_label", "avoid"),
+                score=_get_value(signal, "score", Decimal("0")),
+                reason_codes=_get_value(signal, "reason_codes", []),
+                guardrail_status=_get_value(signal, "guardrail_status", "warn"),
+                champion_model_name=_get_value(summary, "champion_model_name"),
+                champion_model_version=_get_value(summary, "champion_model_version"),
+                liquidity_status=_get_value(summary, "liquidity_status", "unknown"),
+                freshness_status=_get_value(summary, "freshness_status", "stale"),
+            )
+        )
+
+    return CohortComparisonResponse(horizon_hours=horizon_hours, items=items)
+
+
 @router.get("/operational-summary", response_model=OperationalSummaryResponse)
 async def operational_summary(
     session: AsyncSession = Depends(get_db_session),
@@ -662,12 +751,39 @@ class OperationalService:
         self.session = session
 
     async def build_status(self) -> OperationalSummary:
+        stmt = (
+            select(PriceObservationModel.ingested_at)
+            .order_by(desc(PriceObservationModel.ingested_at))
+            .limit(1)
+        )
+        latest_row = (await self.session.execute(stmt)).scalar_one_or_none()
+
+        if latest_row is None:
+            return OperationalSummary(
+                generated_at=datetime.now(UTC),
+                service_status="degraded",
+                freshness_status="stale",
+                warnings=["no_price_observations"],
+                latest_ingested_at=None,
+            )
+
+        latest_ingested_at = latest_row
+        freshness_status = "healthy"
+        warnings: list[str] = []
+        age_minutes = int((datetime.now(UTC) - latest_ingested_at).total_seconds() // 60)
+        if age_minutes >= 180:
+            freshness_status = "stale"
+            warnings.append("stale_ingestion")
+        elif age_minutes >= 90:
+            freshness_status = "warning"
+            warnings.append("ingestion_delay")
+
         return OperationalSummary(
             generated_at=datetime.now(UTC),
-            service_status="ok",
-            freshness_status="healthy",
-            warnings=[],
-            latest_ingested_at=None,
+            service_status="ok" if not warnings else "degraded",
+            freshness_status=freshness_status,
+            warnings=warnings,
+            latest_ingested_at=latest_ingested_at,
         )
 
 
@@ -699,10 +815,43 @@ async def create_watchlist(
     return WatchlistResponse(id=watchlist.id, name=watchlist.name, item_ids=watchlist.item_ids)
 
 
+@router.get("/watchlists/{watchlist_id}", response_model=WatchlistResponse)
+async def get_watchlist(
+    watchlist_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> WatchlistResponse:
+    if watchlist_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+
+    repository = SqlAlchemySavedWatchlistRepository(session)
+    watchlist = await repository.get_watchlist(watchlist_id)
+    if watchlist is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="watchlist not found")
+    return WatchlistResponse(id=watchlist.id, name=watchlist.name, item_ids=watchlist.item_ids)
+
+
+@router.delete("/watchlists/{watchlist_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_watchlist(
+    watchlist_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    if watchlist_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+
+    repository = SqlAlchemySavedWatchlistRepository(session)
+    deleted = await repository.delete_watchlist(watchlist_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="watchlist not found")
+
+
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def recommendations(
     horizon_hours: int = Query(default=1, ge=1),
     limit: int = Query(default=100, ge=1, le=500),
+    signal_label: str | None = Query(default=None),
+    liquidity_status: str | None = Query(default=None),
+    drift_state: str | None = Query(default=None),
+    top_n: int | None = Query(default=None, ge=1, le=500),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[RecommendationResponse]:
     settings = get_settings()
@@ -719,18 +868,30 @@ async def recommendations(
         item_repository=SqlAlchemyItemRepository(session),
     )
     items = await service.list_recommendations(horizon_hours=horizon_hours, limit=limit)
+    filtered_items = [
+        item
+        for item in items
+        if _matches_recommendation_filters(
+            item,
+            signal_label=signal_label,
+            liquidity_status=liquidity_status,
+            drift_state=drift_state,
+        )
+    ]
+    if top_n is not None:
+        filtered_items = filtered_items[:top_n]
     return [
         RecommendationResponse(
-            item_id=item["item_id"] if isinstance(item, dict) else item.item_id,
-            horizon_hours=item["horizon_hours"] if isinstance(item, dict) else item.horizon_hours,
-            signal_label=item["signal_label"] if isinstance(item, dict) else item.signal_label,
-            score=item["score"] if isinstance(item, dict) else item.score,
-            reason_codes=item["reason_codes"] if isinstance(item, dict) else item.reason_codes,
-            guardrail_status=item["guardrail_status"] if isinstance(item, dict) else item.guardrail_status,
-            champion_model_name=item["champion_model_name"] if isinstance(item, dict) else item.champion_model_name,
-            champion_model_version=item["champion_model_version"] if isinstance(item, dict) else item.champion_model_version,
+            item_id=_get_recommendation_value(item, "item_id"),
+            horizon_hours=_get_recommendation_value(item, "horizon_hours"),
+            signal_label=_get_recommendation_value(item, "signal_label"),
+            score=_get_recommendation_value(item, "score"),
+            reason_codes=_get_recommendation_value(item, "reason_codes", []),
+            guardrail_status=_get_recommendation_value(item, "guardrail_status"),
+            champion_model_name=_get_recommendation_value(item, "champion_model_name"),
+            champion_model_version=_get_recommendation_value(item, "champion_model_version"),
         )
-        for item in items
+        for item in filtered_items
     ]
 
 
@@ -738,6 +899,10 @@ async def recommendations(
 async def rankings(
     horizon_hours: int = Query(default=1, ge=1),
     limit: int = Query(default=100, ge=1, le=500),
+    signal_label: str | None = Query(default=None),
+    liquidity_status: str | None = Query(default=None),
+    drift_state: str | None = Query(default=None),
+    top_n: int | None = Query(default=None, ge=1, le=500),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[RankingResponse]:
     settings = get_settings()
@@ -754,21 +919,36 @@ async def rankings(
         item_repository=SqlAlchemyItemRepository(session),
     )
     items = await service.list_recommendations(horizon_hours=horizon_hours, limit=limit)
-    ranked_items = sorted(items, key=lambda item: item["score"] if isinstance(item, dict) else item.score, reverse=True)
+    filtered_items = [
+        item
+        for item in items
+        if _matches_recommendation_filters(
+            item,
+            signal_label=signal_label,
+            liquidity_status=liquidity_status,
+            drift_state=drift_state,
+        )
+    ]
+    ranked_items = sorted(
+        filtered_items,
+        key=lambda item: _get_recommendation_value(item, "score"),
+        reverse=True,
+    )
+    effective_limit = limit if top_n is None else min(limit, top_n)
 
     responses: list[RankingResponse] = []
-    for index, item in enumerate(ranked_items[:limit], start=1):
+    for index, item in enumerate(ranked_items[:effective_limit], start=1):
         responses.append(
             RankingResponse(
-                item_id=item["item_id"] if isinstance(item, dict) else item.item_id,
-                horizon_hours=item["horizon_hours"] if isinstance(item, dict) else item.horizon_hours,
+                item_id=_get_recommendation_value(item, "item_id"),
+                horizon_hours=_get_recommendation_value(item, "horizon_hours"),
                 rank=index,
-                signal_label=item["signal_label"] if isinstance(item, dict) else item.signal_label,
-                score=item["score"] if isinstance(item, dict) else item.score,
-                reason_codes=item["reason_codes"] if isinstance(item, dict) else item.reason_codes,
-                guardrail_status=item["guardrail_status"] if isinstance(item, dict) else item.guardrail_status,
-                champion_model_name=item["champion_model_name"] if isinstance(item, dict) else item.champion_model_name,
-                champion_model_version=item["champion_model_version"] if isinstance(item, dict) else item.champion_model_version,
+                signal_label=_get_recommendation_value(item, "signal_label"),
+                score=_get_recommendation_value(item, "score"),
+                reason_codes=_get_recommendation_value(item, "reason_codes", []),
+                guardrail_status=_get_recommendation_value(item, "guardrail_status"),
+                champion_model_name=_get_recommendation_value(item, "champion_model_name"),
+                champion_model_version=_get_recommendation_value(item, "champion_model_version"),
             )
         )
     return responses

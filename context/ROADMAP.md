@@ -1,5 +1,10 @@
 # Roadmap
 
+## Current cycle
+
+Cycle 2 — active on `feat/phase5-8-cycle2`.
+Expanding phases 5–8 beyond their initial MVP slices. See [cycles/cycle2.md](cycles/cycle2.md) for the gap analysis and order of operations.
+
 ## Phase 0: Architecture and repository foundation
 
 Status: Completed (verified 2026-08-01).
@@ -110,17 +115,6 @@ Status: Completed (verified 2026-08-08).
 Objective:
 Turn raw forecasts, evaluation artifacts, and market context into analyst-facing summaries that are easier to consume than raw rows.
 
-Implementation plan:
-
-1. Build a synthesis service that combines the latest forecast, latest evaluation metrics, drift status, liquidity context, and recency into one compact view per item/horizon.
-2. Add repository helpers that fetch the latest forecast row, the latest champion model evaluation, and the most recent liquidity/coverage indicators for a given item.
-3. Expose three Phase 3 endpoints:
-   - GET /api/v1/items/{item_id}/summary for a compact item state snapshot.
-   - GET /api/v1/items/{item_id}/signal for a recommendation-style signal label and score.
-   - GET /api/v1/items/{item_id}/explanation for the evidence bundle behind the signal.
-4. Keep the first implementation read-only and derived from existing data; do not introduce a new persistence layer until the synthesis contract is stable.
-5. Add unit and integration tests that lock down the synthesis rules and the endpoint payloads.
-
 Scope:
 Curated item summaries, market-state snapshots, synthetic signal bundles, and explainability views that combine forecast, liquidity, drift, and model-performance evidence into a single consumable shape.
 
@@ -146,12 +140,6 @@ Status: Completed (verified 2026-08-08).
 Objective:
 Convert synthesized evidence into actionable signals such as stable, caution, or avoid, with guardrails and reason codes.
 
-Implementation plan:
-
-1. Expose a recommendation endpoint that returns ranked items for a requested horizon using the Phase 3 synthesis contract.
-2. Add a lightweight recommendation service that assembles a signal label, score, guardrail status, and reason codes for each item.
-3. Keep the first implementation read-only and derived from existing data until the ranking heuristics are validated.
-
 Scope:
 Confidence gating, freshness checks, minimum-liquidity rules, risk-adjusted scoring, and evidence-backed recommendation payloads.
 
@@ -172,22 +160,10 @@ The platform can communicate a practical next action for each tracked item.
 
 ## Phase 5: Portfolio ranking and watchlists
 
-Status: MVP slice implemented (2026-08-08); broader ranking scope remains open.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Move from single-item interpretation to ranked, comparable outputs across the tracked universe.
-
-Implemented in the current MVP slice:
-
-- Added a ranking endpoint that returns a ranked list of items for a requested horizon.
-- Added a lightweight ranking service that uses the existing synthesis and recommendation contract.
-- Added tests that lock down the endpoint payload and ordering behavior.
-
-Remaining beyond the current slice:
-
-- Watchlist-oriented persistence and saved views.
-- Additional ranking filters such as liquidity, volatility, and drift thresholds.
-- Broader portfolio-style ranking heuristics and top-N workflows.
 
 Scope:
 Cross-item ranking, watchlists, horizon-based prioritization, and top-N opportunity views with filters for liquidity, confidence, volatility, and drift.
@@ -209,27 +185,16 @@ The system can surface the most actionable opportunities from the tracked univer
 
 ## Phase 6: Analysis workflows and explanation depth
 
-Status: MVP slice implemented (2026-08-08); broader analysis workflow scope remains open.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Make the platform more usable as an analyst tool by improving how summaries, comparisons, and evidence are surfaced.
-
-Implemented in the current MVP slice:
-
-- Added an analysis-summary endpoint that aggregates the key signal, score, and evidence details for a single item/horizon.
-- Added tests that lock down the summary payload and the underlying synthesis contract expectations.
-
-Remaining beyond the current slice:
-
-- Cohort and comparison views across multiple items.
-- Benchmark history and richer historical explanation narratives.
-- More detailed drill-downs into liquidity, drift, and model-selection evidence.
 
 Scope:
 Richer item summaries, cohort comparisons, benchmark history, and explanation narratives for signals, drift, liquidity, and model selection.
 
 Deliverables:
-Comparison endpoints, benchmark-history views, and improved synthesis explanations for downstream consumers.
+Comparison endpoints, a cohort comparison view, benchmark-history views, and improved synthesis explanations for downstream consumers.
 
 Acceptance criteria:
 A user can inspect an item or cohort and quickly understand its current signal, recent performance, and supporting evidence.
@@ -245,22 +210,10 @@ The backend provides a practical analysis workflow that is easy to reason about 
 
 ## Phase 7: Reliability and observability
 
-Status: MVP slice implemented (2026-08-08); broader operational scope remains open.
+Status: Implemented (verified 2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Make the system dependable enough for repeated use and monitoring.
-
-Implemented in the current MVP slice:
-
-- Added an operational-summary endpoint that exposes a simple service health view.
-- Added a minimal operational service shape for future freshness and warning integrations.
-- Added tests that lock down the endpoint contract for the initial slice.
-
-Remaining beyond the current slice:
-
-- Real ingestion-freshness checks based on persisted observation timestamps.
-- Data-quality warning logic for stale or missing ingestion windows.
-- Operational alerting hooks and richer health decomposition.
 
 Scope:
 Ingestion health reporting, forecast freshness monitoring, data-quality warnings, and basic operational alerting hooks.
@@ -282,22 +235,10 @@ The backend can be operated with predictable visibility and simple recovery step
 
 ## Phase 8: Personalization and saved analysis
 
-Status: MVP slice implemented (2026-08-08); broader personalization scope remains open.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Let users preserve their own analytical context without turning the project into a full application platform.
-
-Implemented in the current MVP slice:
-
-- Added watchlist creation and listing endpoints.
-- Added persistence for a saved watchlist name and its item-id list.
-- Added tests that lock down the initial create/list contract.
-
-Remaining beyond the current slice:
-
-- Saved filters and horizon preferences.
-- Local-first annotations or notes.
-- A richer personalization experience that is still scoped to a single-user workflow.
 
 Scope:
 Saved watchlists, saved filters and horizon preferences, and optional local-first annotations or notes.
@@ -316,6 +257,16 @@ Personalization features can create avoidable complexity before the core MVP is 
 
 Exit conditions:
 The product supports repeatable analyst workflows with minimal setup overhead.
+
+## Cycle 3 direction (proposed)
+
+A follow-on cycle can focus on sharpening the analyst workflow without expanding into a broad application platform. Recommended themes for Cycle 3 are:
+
+- richer saved-analysis workflows, including saved filters and horizon preferences;
+- deeper explanation and comparison views for signal behavior and model selection;
+- operational reliability improvements around ingestion freshness, health reporting, and regression coverage.
+
+This next cycle should stay tightly scoped to transparent forecasting, analyst usability, and repeatable local workflows. It should defer UI polish, autonomous decision-making, and multi-user collaboration until the core forecasting value is fully validated.
 
 ## Scope guardrail for future phase planning
 

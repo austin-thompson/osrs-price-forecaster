@@ -99,6 +99,24 @@ class SqlAlchemySavedWatchlistRepository:
         await self._session.refresh(record)
         return Watchlist(id=record.id, name=record.name, item_ids=list(record.item_ids or []))
 
+    async def get_watchlist(self, watchlist_id: int) -> Watchlist | None:
+        stmt = select(SavedWatchlistModel).where(SavedWatchlistModel.id == watchlist_id)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            return None
+        return Watchlist(id=row.id, name=row.name, item_ids=list(row.item_ids or []))
+
+    async def delete_watchlist(self, watchlist_id: int) -> bool:
+        stmt = select(SavedWatchlistModel).where(SavedWatchlistModel.id == watchlist_id)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            return False
+        await self._session.delete(row)
+        await self._session.commit()
+        return True
+
 
 class SqlAlchemyPriceObservationRepository(PriceObservationRepository):
     def __init__(self, session: AsyncSession) -> None:
