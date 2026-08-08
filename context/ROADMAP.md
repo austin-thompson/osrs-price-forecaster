@@ -1,5 +1,10 @@
 # Roadmap
 
+## Current cycle
+
+Cycle 2 — active on `feat/phase5-8-cycle2`.
+Expanding phases 5–8 beyond their initial MVP slices. See [cycles/cycle2.md](cycles/cycle2.md) for the gap analysis and order of operations.
+
 ## Phase 0: Architecture and repository foundation
 
 Status: Completed (verified 2026-08-01).
