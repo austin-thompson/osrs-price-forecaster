@@ -1,4 +1,4 @@
-# API Design (Phase 1 Plan)
+# API Design
 
 ## Versioning
 
@@ -6,7 +6,9 @@
 - Additive changes preferred.
 - Breaking changes require new major API version.
 
-## Planned routes
+## Current API surface
+
+This snapshot reflects the implemented routes through Cycle 2 and the planned Cycle 3 extensions.
 
 Health (Phase 0 implementation):
 
@@ -55,8 +57,10 @@ Phase 4+ decision routes:
 - DELETE /api/v1/watchlists/{watchlist_id}
   - Deletes a saved watchlist by ID.
 
-Phase 6 analysis routes (cycle 2):
+Phase 6 analysis routes (Cycle 2):
 
+- GET /api/v1/items/{item_id}/analysis-summary
+  - Returns an analyst-oriented summary of an item’s current signal, supporting evidence, and recent context.
 - GET /api/v1/cohort-comparison
   - Accepts a list of item IDs and returns their current signal state side by side for a requested horizon.
 

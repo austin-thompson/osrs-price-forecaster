@@ -55,8 +55,8 @@ Implemented: 2026-08-08
 
 - Phase 5: `/api/v1/rankings` endpoint returning a ranked list of items for a horizon.
 - Phase 6: `/api/v1/items/{item_id}/analysis-summary` endpoint aggregating signal and evidence.
-- Phase 7: `/api/v1/operational/summary` endpoint exposing a basic service-health shape.
-- Phase 8: `/api/v1/watchlist` create and list endpoints backed by a `saved_watchlists` table.
+- Phase 7: `/api/v1/operational-summary` endpoint exposing a basic service-health shape.
+- Phase 8: `/api/v1/watchlists` create and list endpoints backed by a `saved_watchlists` table.
 
 ## Verification evidence
 

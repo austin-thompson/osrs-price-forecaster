@@ -9,7 +9,8 @@ Verification evidence lives in [TESTING.md](../TESTING.md).
 
 ## Index
 
-| Cycle                | Branch               | Status              | Phases covered                              |
-| -------------------- | -------------------- | ------------------- | ------------------------------------------- |
-| [Cycle 1](cycle1.md) | main                 | Closed (2026-08-08) | Phase 0 – Phase 4, MVP slices for Phase 5–8 |
-| [Cycle 2](cycle2.md) | feat/phase5-8-cycle2 | Active              | Phase 5–8 broader scope                     |
+| Cycle                | Branch               | Status               | Phases covered                              |
+| -------------------- | -------------------- | -------------------- | ------------------------------------------- |
+| [Cycle 1](cycle1.md) | main                 | Closed (2026-08-08)  | Phase 0 – Phase 4, MVP slices for Phase 5–8 |
+| [Cycle 2](cycle2.md) | feat/phase5-8-cycle2 | Closed for MVP scope | Phase 5–8 MVP scope                         |
+| [Cycle 3](cycle3.md) | TBD                  | Planned              | Analyst workflow and reliability refinement |

@@ -23,7 +23,7 @@ For phase verification history and completion checklists, see the "Phase 1 Compl
 
 ## Current MVP-slice status (2026-08-08)
 
-Phases 0–4 are complete. MVP slices for phases 5–8 are implemented. Active work on the broader phase 5–8 scope is tracked in [cycles/cycle2.md](cycles/cycle2.md).
+Phases 0–4 are complete. MVP slices for phases 5–8 are implemented. Active work on the broader phase 5–8 scope is tracked in [cycles/cycle2.md](cycles/cycle2.md), and a proposed follow-on plan for analyst workflow refinement is captured in [cycles/cycle3.md](cycles/cycle3.md).
 
 For the full delivery history and verification evidence, see [cycles/cycle1.md](cycles/cycle1.md) and [TESTING.md](TESTING.md).
 

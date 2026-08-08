@@ -160,7 +160,7 @@ The platform can communicate a practical next action for each tracked item.
 
 ## Phase 5: Portfolio ranking and watchlists
 
-Status: MVP slice implemented (2026-08-08); cycle 2 in progress.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Move from single-item interpretation to ranked, comparable outputs across the tracked universe.
@@ -185,7 +185,7 @@ The system can surface the most actionable opportunities from the tracked univer
 
 ## Phase 6: Analysis workflows and explanation depth
 
-Status: MVP slice implemented (2026-08-08); cycle 2 in progress.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Make the platform more usable as an analyst tool by improving how summaries, comparisons, and evidence are surfaced.
@@ -210,7 +210,7 @@ The backend provides a practical analysis workflow that is easy to reason about 
 
 ## Phase 7: Reliability and observability
 
-Status: Implemented (verified 2026-08-08); cycle 2 in progress.
+Status: Implemented (verified 2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Make the system dependable enough for repeated use and monitoring.
@@ -235,7 +235,7 @@ The backend can be operated with predictable visibility and simple recovery step
 
 ## Phase 8: Personalization and saved analysis
 
-Status: MVP slice implemented (2026-08-08); cycle 2 in progress.
+Status: MVP slice implemented (2026-08-08); cycle 2 completed for MVP scope.
 
 Objective:
 Let users preserve their own analytical context without turning the project into a full application platform.
@@ -257,6 +257,16 @@ Personalization features can create avoidable complexity before the core MVP is 
 
 Exit conditions:
 The product supports repeatable analyst workflows with minimal setup overhead.
+
+## Cycle 3 direction (proposed)
+
+A follow-on cycle can focus on sharpening the analyst workflow without expanding into a broad application platform. Recommended themes for Cycle 3 are:
+
+- richer saved-analysis workflows, including saved filters and horizon preferences;
+- deeper explanation and comparison views for signal behavior and model selection;
+- operational reliability improvements around ingestion freshness, health reporting, and regression coverage.
+
+This next cycle should stay tightly scoped to transparent forecasting, analyst usability, and repeatable local workflows. It should defer UI polish, autonomous decision-making, and multi-user collaboration until the core forecasting value is fully validated.
 
 ## Scope guardrail for future phase planning
 

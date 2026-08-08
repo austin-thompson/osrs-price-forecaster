@@ -2,11 +2,11 @@
 
 Branch: feat/phase5-8-cycle2
 Started: 2026-08-08
-Status: In progress
+Status: Closed for MVP scope (2026-08-08)
 
 ## Objective
 
-Expand the phase 5–8 MVP slices into working implementations. Fix the hardcoded placeholder behaviour that was carried over from cycle 1, complete the incomplete CRUD surfaces, and add the first meaningful filtering and comparison capabilities.
+Expand the phase 5–8 MVP slices into working implementations. Replace hardcoded placeholder behavior with synthesis-backed outputs, complete the initial CRUD surfaces for watchlists, and add the first meaningful filtering and comparison capabilities.
 
 ## Gap analysis (as of 2026-08-08)
 
@@ -15,7 +15,7 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 - Phase 5 recommendation output is now wired to the synthesis layer, so ranking and recommendation responses derive their score, signal label, and reason codes from real synthesis data rather than hardcoded values.
 - Champion model metadata is now populated from the selection repository for recommendation and ranking responses.
 - `GET /api/v1/rankings` and `GET /api/v1/recommendations` now support filtering by `signal_label`, `liquidity_status`, `drift_state`, and `top_n`.
-- Remaining work for this phase is the watchlist CRUD completion: `GET /api/v1/watchlist/{id}` and `DELETE /api/v1/watchlist/{id}` are still pending.
+- The watchlist CRUD MVP is now implemented through the persisted API surface.
 
 ### Phase 6 — Analysis workflows and explanation depth
 
@@ -61,7 +61,7 @@ Once scores are real, filter params (`signal_label`, `liquidity_status`, `drift_
 
 ### Step 4 rationale
 
-Straightforward CRUD completion. Add `GET /api/v1/watchlist/{id}` and `DELETE /api/v1/watchlist/{id}` using the existing repository and persistence layer.
+Straightforward CRUD completion. Add `GET /api/v1/watchlists/{watchlist_id}` and `DELETE /api/v1/watchlists/{watchlist_id}` using the existing repository and persistence layer.
 
 ### Step 5 rationale
 
@@ -71,6 +71,6 @@ Depends on real per-item scores (step 1) and benefits from the filter work (step
 
 - `GET /api/v1/rankings?horizon_hours=1` returns items with real synthesis-derived scores, real signal labels, and populated champion model fields.
 - `GET /api/v1/operational-summary` returns a real `latest_ingested_at` timestamp and a `freshness_status` derived from elapsed time.
-- `GET /api/v1/watchlist/{id}` and `DELETE /api/v1/watchlist/{id}` exist and are covered by tests.
+- `GET /api/v1/watchlists`, `POST /api/v1/watchlists`, `GET /api/v1/watchlists/{watchlist_id}`, and `DELETE /api/v1/watchlists/{watchlist_id}` are implemented and covered by tests.
 - A cohort comparison endpoint exists and returns signal state for multiple items in a single response.
 - All new behavior is covered by unit tests. No hardcoded scores or placeholder return values remain in production paths.
