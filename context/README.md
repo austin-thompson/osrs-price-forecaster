@@ -23,14 +23,13 @@ For phase verification history and completion checklists, see the "Phase 1 Compl
 
 ## Current MVP-slice status (2026-08-08)
 
-The implementation currently includes the first MVP slices for later roadmap phases:
+Phases 0–4 are complete. MVP slices for phases 5–8 are implemented. Active work on the broader phase 5–8 scope is tracked in [cycles/cycle2.md](cycles/cycle2.md).
 
-- Phase 5: a ranking endpoint for horizon-based item ordering.
-- Phase 6: an analysis-summary endpoint that bundles a compact signal/evidence snapshot.
-- Phase 7: an operational-summary endpoint that exposes a basic service-health view.
-- Phase 8: a watchlist creation/listing flow for saving a named list of item IDs.
+For the full delivery history and verification evidence, see [cycles/cycle1.md](cycles/cycle1.md) and [TESTING.md](TESTING.md).
 
-These slices are intentionally narrow. The broader phase scope for ranking, analysis workflows, operational observability, and personalization remains open for future implementation.
+## Cycle planning
+
+Per-cycle planning and delivery records live in [cycles/](cycles/). Each cycle file holds gap analysis, order of operations, and status tracking. The ROADMAP holds only stable phase definitions.
 
 ## Normative documents
 

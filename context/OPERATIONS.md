@@ -56,3 +56,15 @@ All runtime options are environment-driven through pydantic-settings.
 ## Future observability
 
 Metrics and tracing are planned for later phases when needed.
+
+## CI/CD posture
+
+CI/CD is intentionally deferred while the project is local-first and single-developer. Manual Git tags serve as lightweight release markers in the interim.
+
+A GitHub Actions workflow should be introduced when:
+
+- The unit and integration test suite is stable enough to gate pull requests automatically.
+- The Docker build is confirmed reproducible across environments.
+- There is a clear deployment target (even a simple one) that benefits from automated delivery.
+
+When that point is reached, the workflow should cover at minimum: dependency install, lint, typecheck, and the full test suite. A Docker build check and migration dry-run would be the next logical additions. A dedicated CI/CD context document can be created at that point to record workflow design decisions.

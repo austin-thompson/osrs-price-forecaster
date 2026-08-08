@@ -44,8 +44,24 @@ Phase 4+ decision routes:
 - GET /api/v1/recommendations
   - Returns ranked items for a horizon with signal label, score, reason codes, and guardrail status.
   - Suggested labels: stable, caution, avoid.
+  - Note: scores must be derived from SynthesisService, not hardcoded (cycle 2 gap).
 - GET /api/v1/rankings
+  - Planned filter params (cycle 2): signal_label, liquidity_status, drift_state, top_n.
 - GET /api/v1/watchlist
+- GET /api/v1/watchlist/{id} (cycle 2: missing)
+- DELETE /api/v1/watchlist/{id} (cycle 2: missing)
+
+Phase 6 analysis routes (cycle 2):
+
+- GET /api/v1/items/cohort
+  - Accepts a list of item IDs and returns their current signal state side by side.
+  - Blocked on RecommendationService synthesis wiring.
+
+Phase 7 operational routes:
+
+- GET /api/v1/operational/summary
+  - Note: freshness_status, latest_ingested_at, and warnings are currently placeholders (cycle 2 gap).
+  - Must query price_observations for real ingestion timestamps and derive freshness from elapsed time.
 
 ## Response conventions
 
