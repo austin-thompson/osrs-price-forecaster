@@ -26,10 +26,10 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 
 ### Phase 7 — Reliability and observability
 
-- `freshness_status` is hardcoded; no database query is performed.
-- `latest_ingested_at` is always `None`; `price_observations` is not queried.
-- `warnings` is always an empty list.
-- The operational summary provides no real signal about system health.
+- The operational summary now queries the latest `price_observations` row and derives `latest_ingested_at` from the database.
+- `freshness_status` is derived from the age of the newest observation and escalates to `warning` or `stale` when freshness thresholds are crossed.
+- `warnings` now includes real conditions such as `stale_ingestion` or `ingestion_delay`.
+- The operational summary endpoint now provides a meaningful health signal for operators.
 
 ### Phase 8 — Personalization and saved analysis
 
@@ -42,7 +42,7 @@ Expand the phase 5–8 MVP slices into working implementations. Fix the hardcode
 | Step | Work item                                           | Blocking      | Status      |
 | ---- | --------------------------------------------------- | ------------- | ----------- |
 | 1    | Wire `RecommendationService` to `SynthesisService`  | Steps 3 and 5 | Completed   |
-| 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Not started |
+| 2    | Wire Phase 7 operational summary to real DB queries | Nothing       | Completed   |
 | 3    | Phase 5 ranking filters + champion model population | Step 1        | Completed   |
 | 4    | Phase 8 watchlist fetch and delete endpoints        | Nothing       | Not started |
 | 5    | Phase 6 cohort comparison endpoint                  | Steps 1 and 3 | Completed   |
@@ -70,7 +70,7 @@ Depends on real per-item scores (step 1) and benefits from the filter work (step
 ## Acceptance criteria for cycle 2 closure
 
 - `GET /api/v1/rankings?horizon_hours=1` returns items with real synthesis-derived scores, real signal labels, and populated champion model fields.
-- `GET /api/v1/operational/summary` returns a real `latest_ingested_at` timestamp and a `freshness_status` derived from elapsed time.
+- `GET /api/v1/operational-summary` returns a real `latest_ingested_at` timestamp and a `freshness_status` derived from elapsed time.
 - `GET /api/v1/watchlist/{id}` and `DELETE /api/v1/watchlist/{id}` exist and are covered by tests.
 - A cohort comparison endpoint exists and returns signal state for multiple items in a single response.
 - All new behavior is covered by unit tests. No hardcoded scores or placeholder return values remain in production paths.

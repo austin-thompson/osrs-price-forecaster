@@ -210,7 +210,7 @@ The backend provides a practical analysis workflow that is easy to reason about 
 
 ## Phase 7: Reliability and observability
 
-Status: MVP slice implemented (2026-08-08); cycle 2 in progress.
+Status: Implemented (verified 2026-08-08); cycle 2 in progress.
 
 Objective:
 Make the system dependable enough for repeated use and monitoring.

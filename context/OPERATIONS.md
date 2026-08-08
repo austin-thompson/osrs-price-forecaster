@@ -28,6 +28,7 @@
 
 - /health/live for process liveness.
 - /health/ready for dependency readiness.
+- /api/v1/operational-summary for ingestion freshness and service health status.
 
 ## Graceful shutdown
 

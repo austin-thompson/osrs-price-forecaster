@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from osrs_price_forecaster.api.dependencies import get_db_session
@@ -751,12 +751,39 @@ class OperationalService:
         self.session = session
 
     async def build_status(self) -> OperationalSummary:
+        stmt = (
+            select(PriceObservationModel.ingested_at)
+            .order_by(desc(PriceObservationModel.ingested_at))
+            .limit(1)
+        )
+        latest_row = (await self.session.execute(stmt)).scalar_one_or_none()
+
+        if latest_row is None:
+            return OperationalSummary(
+                generated_at=datetime.now(UTC),
+                service_status="degraded",
+                freshness_status="stale",
+                warnings=["no_price_observations"],
+                latest_ingested_at=None,
+            )
+
+        latest_ingested_at = latest_row
+        freshness_status = "healthy"
+        warnings: list[str] = []
+        age_minutes = int((datetime.now(UTC) - latest_ingested_at).total_seconds() // 60)
+        if age_minutes >= 180:
+            freshness_status = "stale"
+            warnings.append("stale_ingestion")
+        elif age_minutes >= 90:
+            freshness_status = "warning"
+            warnings.append("ingestion_delay")
+
         return OperationalSummary(
             generated_at=datetime.now(UTC),
-            service_status="ok",
-            freshness_status="healthy",
-            warnings=[],
-            latest_ingested_at=None,
+            service_status="ok" if not warnings else "degraded",
+            freshness_status=freshness_status,
+            warnings=warnings,
+            latest_ingested_at=latest_ingested_at,
         )
 
 

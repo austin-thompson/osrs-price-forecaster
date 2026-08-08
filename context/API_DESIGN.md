@@ -43,25 +43,25 @@ Phase 4+ decision routes:
 
 - GET /api/v1/recommendations
   - Returns ranked items for a horizon with signal label, score, reason codes, and guardrail status.
-  - Suggested labels: stable, caution, avoid.
-  - Note: scores must be derived from SynthesisService, not hardcoded (cycle 2 gap).
+  - Scores are derived from SynthesisService rather than hardcoded values.
 - GET /api/v1/rankings
-  - Planned filter params (cycle 2): signal_label, liquidity_status, drift_state, top_n.
-- GET /api/v1/watchlist
-- GET /api/v1/watchlist/{id} (cycle 2: missing)
-- DELETE /api/v1/watchlist/{id} (cycle 2: missing)
+  - Supports filter params: signal_label, liquidity_status, drift_state, and top_n.
+- GET /api/v1/watchlists
+  - Lists saved watchlists.
+- POST /api/v1/watchlists
+  - Creates a saved watchlist with a name and item ID list.
+- Future: GET /api/v1/watchlists/{id} and DELETE /api/v1/watchlists/{id} remain planned for the broader Phase 8 scope.
 
 Phase 6 analysis routes (cycle 2):
 
-- GET /api/v1/items/cohort
-  - Accepts a list of item IDs and returns their current signal state side by side.
-  - Blocked on RecommendationService synthesis wiring.
+- GET /api/v1/cohort-comparison
+  - Accepts a list of item IDs and returns their current signal state side by side for a requested horizon.
 
 Phase 7 operational routes:
 
-- GET /api/v1/operational/summary
-  - Note: freshness_status, latest_ingested_at, and warnings are currently placeholders (cycle 2 gap).
-  - Must query price_observations for real ingestion timestamps and derive freshness from elapsed time.
+- GET /api/v1/operational-summary
+  - Returns generated_at, service_status, freshness_status, warnings, and latest_ingested_at.
+  - Freshness is derived from the newest persisted price observation timestamp.
 
 ## Response conventions
 
