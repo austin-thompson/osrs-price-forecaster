@@ -25,6 +25,6 @@ Run the end-to-end live check workflow:
 
 Optional environment overrides:
 
-- `OSRS_WIKI_USER_AGENT` (default: `osrs-price-forecaster/0.1 (contact: local-dev@example.com)`)
+- `OSRS_WIKI_USER_AGENT` (default: `osrs-price-forecaster/0.2.0-alpha (contact: local-dev@example.com)`)
 - `ITEM_ID` (default: `4151`)
 - `HORIZON_HOURS` (default: `1`)
