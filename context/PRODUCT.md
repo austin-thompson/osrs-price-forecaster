@@ -51,6 +51,13 @@ What remains beyond these first slices:
 
 The next expansion phases are intended to improve usability and comparability for analysts, not to broaden the product into unrelated experiences. The current Phase 5-8 slices keep the scope tight while proving the API contract for ranking, analysis summaries, operational visibility, and simple saved watchlists without drifting into UI polish or speculative features. While the MVP is still being completed, future phase design should stay tightly scoped to transparent forecasting, ranking, explainability, reliability, and lightweight personalization work.
 
+## Cycle 3 product boundary
+
+Cycle 3 adds reusable saved-analysis preferences, clearer evidence narratives, and more actionable
+operational status. Saved preferences configure existing ranking workflows; they do not introduce a
+generic settings platform, user accounts, collaboration, or automatic execution. The first contract
+supports a saved name, horizon, ranking filters, top-N limit, and an optional watchlist reference.
+
 ## Non-goals
 
 - Automated trading.

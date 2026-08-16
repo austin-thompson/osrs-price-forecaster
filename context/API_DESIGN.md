@@ -70,6 +70,35 @@ Phase 7 operational routes:
   - Returns generated_at, service_status, freshness_status, warnings, and latest_ingested_at.
   - Freshness is derived from the newest persisted price observation timestamp.
 
+Cycle 3 saved-analysis routes:
+
+- GET /api/v1/preferences
+  - Lists saved analysis preferences newest first.
+- POST /api/v1/preferences
+  - Creates a reusable ranking configuration.
+- GET /api/v1/preferences/{preference_id}
+  - Returns one saved analysis preference by ID.
+- DELETE /api/v1/preferences/{preference_id}
+  - Deletes one saved analysis preference and returns HTTP 204.
+
+Saved-analysis preference request fields:
+
+- `name`: required, trimmed string with 1–128 characters.
+- `horizon_hours`: required and restricted to the configured forecast horizon set.
+- `signal_labels`: zero or more unique values from `stable`, `caution`, and `avoid`.
+- `liquidity_statuses`: zero or more unique values from `healthy`, `risky`, and `unknown`.
+- `drift_states`: zero or more unique values from `improved`, `stable`, `worsened`,
+  `insufficient_history`, and `unknown`.
+- `top_n`: required integer from 1–500, matching the ranking endpoint limit.
+- `watchlist_id`: optional positive integer referencing a saved watchlist.
+
+Empty filter lists mean no restriction for that filter. Duplicate filter values are rejected rather
+than silently normalized. A missing referenced watchlist returns HTTP 404. Preference names do not
+need to be unique because this remains a local, single-user workflow.
+
+Saved-analysis preference responses add `id` and `created_at` to the request fields. Deleting a
+watchlist sets any associated preference `watchlist_id` to null so the remaining filters stay usable.
+
 ## Response conventions
 
 - JSON response bodies only.
@@ -89,6 +118,7 @@ Phase 1 list routes should support cursor or limit/offset with explicit defaults
 - Path IDs must be positive integers.
 - Horizon values must be from configured horizon set.
 - Date range filters must be UTC and valid.
+- Saved-preference filter values must use the documented stable vocabularies.
 
 ## Error handling
 
