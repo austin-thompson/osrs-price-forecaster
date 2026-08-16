@@ -157,6 +157,18 @@ Uniqueness:
 
 - UNIQUE (item_id, horizon_hours, selected_at)
 
+### saved_watchlists
+
+Purpose:
+Persist local-first item collections for repeatable analyst workflows.
+
+Columns:
+
+- id BIGSERIAL PK
+- name VARCHAR(128) NOT NULL
+- item_ids JSONB NOT NULL DEFAULT '[]'::jsonb
+- created_at TIMESTAMPTZ NOT NULL
+
 ## Timestamp semantics
 
 - source_timestamp: timestamp from OSRS source data.
