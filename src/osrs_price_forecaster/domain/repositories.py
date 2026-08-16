@@ -9,6 +9,7 @@ from osrs_price_forecaster.domain.entities import (
     ModelEvaluationRecord,
     ModelSelectionRecord,
     PriceObservation,
+    SavedAnalysisPreference,
     Watchlist,
 )
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
@@ -30,6 +31,26 @@ class SavedWatchlistRepository(Protocol):
     async def get_watchlist(self, watchlist_id: int) -> Watchlist | None: ...
 
     async def delete_watchlist(self, watchlist_id: int) -> bool: ...
+
+
+class SavedAnalysisPreferenceRepository(Protocol):
+    async def list_preferences(self) -> list[SavedAnalysisPreference]: ...
+
+    async def create_preference(
+        self,
+        *,
+        name: str,
+        horizon: ForecastHorizon,
+        signal_labels: list[str],
+        liquidity_statuses: list[str],
+        drift_states: list[str],
+        top_n: int,
+        watchlist_id: int | None,
+    ) -> SavedAnalysisPreference: ...
+
+    async def get_preference(self, preference_id: int) -> SavedAnalysisPreference | None: ...
+
+    async def delete_preference(self, preference_id: int) -> bool: ...
 
 
 class PriceObservationRepository(Protocol):

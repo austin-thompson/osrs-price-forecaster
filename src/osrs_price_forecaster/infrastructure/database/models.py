@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -46,6 +47,34 @@ class SavedWatchlistModel(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     item_ids: Mapped[list[int]] = mapped_column("item_ids", JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class SavedAnalysisPreferenceModel(Base):
+    __tablename__ = "saved_analysis_preferences"
+    __table_args__ = (
+        CheckConstraint("horizon_hours > 0", name="ck_saved_preferences_horizon_positive"),
+        CheckConstraint("top_n BETWEEN 1 AND 500", name="ck_saved_preferences_top_n_range"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    horizon_hours: Mapped[int] = mapped_column(Integer, nullable=False)
+    signal_labels: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    liquidity_statuses: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    drift_states: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    top_n: Mapped[int] = mapped_column(Integer, nullable=False)
+    watchlist_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "saved_watchlists.id",
+            name="fk_saved_preferences_watchlist_id_saved_watchlists",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )

@@ -77,7 +77,7 @@ Success criteria:
 | Step | Work item                                                        | Status    |
 | ---- | ---------------------------------------------------------------- | --------- |
 | 1    | Define the saved-preference domain and API contract              | Completed |
-| 2    | Add the saved-preference migration and repository                | Pending   |
+| 2    | Add the saved-preference migration and repository                | Completed |
 | 3    | Implement saved-preference CRUD endpoints and tests              | Pending   |
 | 4    | Document analysis endpoint boundaries                            | Pending   |
 | 5    | Enrich explanation and cohort-comparison responses               | Pending   |
