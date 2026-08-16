@@ -1,8 +1,7 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
-
-from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -43,7 +42,10 @@ def _matches_recommendation_filters(
 ) -> bool:
     if signal_label is not None and _get_recommendation_value(item, "signal_label") != signal_label:
         return False
-    if liquidity_status is not None and _get_recommendation_value(item, "liquidity_status") != liquidity_status:
+    if (
+        liquidity_status is not None
+        and _get_recommendation_value(item, "liquidity_status") != liquidity_status
+    ):
         return False
     if drift_state is not None and _get_recommendation_value(item, "drift_state") != drift_state:
         return False
@@ -483,7 +485,9 @@ async def backtesting_report(
             )
         )
 
-    leaderboard.sort(key=lambda row: row.metric_mae if row.metric_mae is not None else Decimal("1e18"))
+    leaderboard.sort(
+        key=lambda row: row.metric_mae if row.metric_mae is not None else Decimal("1e18")
+    )
 
     return BacktestingReportResponse(
         item_id=item_id,
@@ -688,9 +692,13 @@ async def cohort_comparison(
     session: AsyncSession = Depends(get_db_session),
 ) -> CohortComparisonResponse:
     if not item_ids:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must not be empty")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must not be empty"
+        )
     if any(item_id <= 0 for item_id in item_ids):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive"
+        )
 
     settings = get_settings()
     if horizon_hours not in settings.forecast_horizons_hours:
@@ -712,8 +720,12 @@ async def cohort_comparison(
 
     items: list[CohortComparisonItemResponse] = []
     for item_id in item_ids:
-        summary = await service.build_summary(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
-        signal = await service.build_signal(item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours))
+        summary = await service.build_summary(
+            item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours)
+        )
+        signal = await service.build_signal(
+            item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours)
+        )
         items.append(
             CohortComparisonItemResponse(
                 item_id=item_id,
@@ -739,10 +751,16 @@ async def operational_summary(
     status = await service.build_status()
     return OperationalSummaryResponse(
         generated_at=status["generated_at"] if isinstance(status, dict) else status.generated_at,
-        service_status=status["service_status"] if isinstance(status, dict) else status.service_status,
-        freshness_status=status["freshness_status"] if isinstance(status, dict) else status.freshness_status,
+        service_status=status["service_status"]
+        if isinstance(status, dict)
+        else status.service_status,
+        freshness_status=status["freshness_status"]
+        if isinstance(status, dict)
+        else status.freshness_status,
         warnings=status["warnings"] if isinstance(status, dict) else status.warnings,
-        latest_ingested_at=status["latest_ingested_at"] if isinstance(status, dict) else status.latest_ingested_at,
+        latest_ingested_at=status["latest_ingested_at"]
+        if isinstance(status, dict)
+        else status.latest_ingested_at,
     )
 
 
@@ -806,9 +824,13 @@ async def create_watchlist(
 ) -> WatchlistResponse:
     name = payload.name.strip()
     if not name:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="name must not be empty")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="name must not be empty"
+        )
     if any(item_id <= 0 for item_id in payload.item_ids):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="item_ids must be positive"
+        )
 
     repository = SqlAlchemySavedWatchlistRepository(session)
     watchlist = await repository.create_watchlist(name=name, item_ids=payload.item_ids)
@@ -821,7 +843,9 @@ async def get_watchlist(
     session: AsyncSession = Depends(get_db_session),
 ) -> WatchlistResponse:
     if watchlist_id <= 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive"
+        )
 
     repository = SqlAlchemySavedWatchlistRepository(session)
     watchlist = await repository.get_watchlist(watchlist_id)
@@ -836,7 +860,9 @@ async def delete_watchlist(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     if watchlist_id <= 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="watchlist_id must be positive"
+        )
 
     repository = SqlAlchemySavedWatchlistRepository(session)
     deleted = await repository.delete_watchlist(watchlist_id)

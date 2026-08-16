@@ -1,12 +1,18 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import cast
 
 from osrs_price_forecaster.application.synthesis.service import SynthesisService
 from osrs_price_forecaster.domain.entities import (
     ForecastResult,
     ModelEvaluationRecord,
     ModelSelectionRecord,
+)
+from osrs_price_forecaster.domain.repositories import (
+    ForecastRepository,
+    ModelEvaluationRepository,
+    ModelSelectionRepository,
 )
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 
@@ -15,7 +21,9 @@ class FakeForecastRepository:
     def __init__(self, forecast: ForecastResult | None) -> None:
         self._forecast = forecast
 
-    async def list_forecasts(self, item_id: int, horizon: ForecastHorizon, limit: int = 100) -> list[ForecastResult]:
+    async def list_forecasts(
+        self, item_id: int, horizon: ForecastHorizon, limit: int = 100
+    ) -> list[ForecastResult]:
         if self._forecast is None:
             return []
         return [self._forecast]
@@ -25,7 +33,9 @@ class FakeEvaluationRepository:
     def __init__(self, evaluation: ModelEvaluationRecord | None) -> None:
         self._evaluation = evaluation
 
-    async def list_evaluations(self, item_id: int, horizon: ForecastHorizon, limit: int = 100) -> list[ModelEvaluationRecord]:
+    async def list_evaluations(
+        self, item_id: int, horizon: ForecastHorizon, limit: int = 100
+    ) -> list[ModelEvaluationRecord]:
         if self._evaluation is None:
             return []
         return [self._evaluation]
@@ -35,8 +45,22 @@ class FakeSelectionRepository:
     def __init__(self, selection: ModelSelectionRecord | None) -> None:
         self._selection = selection
 
-    async def latest_selection(self, item_id: int, horizon: ForecastHorizon) -> ModelSelectionRecord | None:
+    async def latest_selection(
+        self, item_id: int, horizon: ForecastHorizon
+    ) -> ModelSelectionRecord | None:
         return self._selection
+
+
+def _build_service(
+    forecast: ForecastResult | None,
+    evaluation: ModelEvaluationRecord | None,
+    selection: ModelSelectionRecord | None,
+) -> SynthesisService:
+    return SynthesisService(
+        forecast_repository=cast(ForecastRepository, FakeForecastRepository(forecast)),
+        evaluation_repository=cast(ModelEvaluationRepository, FakeEvaluationRepository(evaluation)),
+        selection_repository=cast(ModelSelectionRepository, FakeSelectionRepository(selection)),
+    )
 
 
 def test_summary_uses_monitor_label_for_healthy_inputs() -> None:
@@ -88,11 +112,7 @@ def test_summary_uses_monitor_label_for_healthy_inputs() -> None:
             evaluation_id=1,
         )
 
-        service = SynthesisService(
-            forecast_repository=FakeForecastRepository(forecast),
-            evaluation_repository=FakeEvaluationRepository(evaluation),
-            selection_repository=FakeSelectionRepository(selection),
-        )
+        service = _build_service(forecast, evaluation, selection)
 
         summary = await service.build_summary(item_id=4151, horizon=ForecastHorizon(hours=1))
         assert summary.signal_label == "stable"
@@ -151,15 +171,30 @@ def test_signal_returns_avoid_for_stale_and_illiquid_inputs() -> None:
             evaluation_id=3,
         )
 
-        service = SynthesisService(
-            forecast_repository=FakeForecastRepository(forecast),
-            evaluation_repository=FakeEvaluationRepository(evaluation),
-            selection_repository=FakeSelectionRepository(selection),
-        )
+        service = _build_service(forecast, evaluation, selection)
 
         signal = await service.build_signal(item_id=4151, horizon=ForecastHorizon(hours=1))
         assert signal.signal_label == "avoid"
         assert "stale_data" in signal.reason_codes
         assert "liquidity_risk" in signal.reason_codes
+
+    asyncio.run(run())
+
+
+def test_summary_and_explanation_handle_missing_forecast() -> None:
+    async def run() -> None:
+        service = _build_service(None, None, None)
+        horizon = ForecastHorizon(hours=1)
+
+        summary = await service.build_summary(item_id=4151, horizon=horizon)
+        explanation = await service.build_explanation(item_id=4151, horizon=horizon)
+
+        assert summary.signal_label == "avoid"
+        assert summary.freshness_status == "stale"
+        assert summary.prediction_interval_low is None
+        assert summary.drift_ratio is None
+        assert explanation.liquidity_observations_dropped is None
+        assert explanation.interval_width is None
+        assert explanation.reason_codes == ["missing_forecast"]
 
     asyncio.run(run())

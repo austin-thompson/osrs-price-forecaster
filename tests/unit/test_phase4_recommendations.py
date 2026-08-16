@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -17,7 +16,9 @@ class FakeRecommendationService:
     def __init__(self, recommendations: list[dict[str, Any]]) -> None:
         self._recommendations = recommendations
 
-    async def list_recommendations(self, *, horizon_hours: int, limit: int = 100) -> list[dict[str, Any]]:
+    async def list_recommendations(
+        self, *, horizon_hours: int, limit: int = 100
+    ) -> list[dict[str, Any]]:
         return self._recommendations
 
 

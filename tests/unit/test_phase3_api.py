@@ -7,7 +7,11 @@ from fastapi.testclient import TestClient
 
 from osrs_price_forecaster.api.dependencies import get_db_session
 from osrs_price_forecaster.api.routes.v1 import router
-from osrs_price_forecaster.domain.entities import ForecastResult, ModelEvaluationRecord, ModelSelectionRecord
+from osrs_price_forecaster.domain.entities import (
+    ForecastResult,
+    ModelEvaluationRecord,
+    ModelSelectionRecord,
+)
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 
 
@@ -19,7 +23,9 @@ class FakeForecastRepository:
     def __init__(self, forecast: ForecastResult | None) -> None:
         self._forecast = forecast
 
-    async def list_forecasts(self, item_id: int, horizon: ForecastHorizon, limit: int = 100) -> list[ForecastResult]:
+    async def list_forecasts(
+        self, item_id: int, horizon: ForecastHorizon, limit: int = 100
+    ) -> list[ForecastResult]:
         if self._forecast is None:
             return []
         return [self._forecast]
@@ -29,7 +35,9 @@ class FakeEvaluationRepository:
     def __init__(self, evaluation: ModelEvaluationRecord | None) -> None:
         self._evaluation = evaluation
 
-    async def list_evaluations(self, item_id: int, horizon: ForecastHorizon, limit: int = 100) -> list[ModelEvaluationRecord]:
+    async def list_evaluations(
+        self, item_id: int, horizon: ForecastHorizon, limit: int = 100
+    ) -> list[ModelEvaluationRecord]:
         if self._evaluation is None:
             return []
         return [self._evaluation]
@@ -39,7 +47,9 @@ class FakeSelectionRepository:
     def __init__(self, selection: ModelSelectionRecord | None) -> None:
         self._selection = selection
 
-    async def latest_selection(self, item_id: int, horizon: ForecastHorizon) -> ModelSelectionRecord | None:
+    async def latest_selection(
+        self, item_id: int, horizon: ForecastHorizon
+    ) -> ModelSelectionRecord | None:
         return self._selection
 
 
@@ -106,7 +116,12 @@ def test_phase3_summary_endpoint_returns_synthesis_payload(monkeypatch: Any) -> 
     )
 
     class FakeSynthesisService:
-        def __init__(self, forecast: ForecastResult, evaluation: ModelEvaluationRecord, selection: ModelSelectionRecord) -> None:
+        def __init__(
+            self,
+            forecast: ForecastResult,
+            evaluation: ModelEvaluationRecord,
+            selection: ModelSelectionRecord,
+        ) -> None:
             self._forecast = forecast
             self._evaluation = evaluation
             self._selection = selection
@@ -138,14 +153,33 @@ def test_phase3_summary_endpoint_returns_synthesis_payload(monkeypatch: Any) -> 
             return type(
                 "Signal",
                 (),
-                {"item_id": item_id, "horizon_hours": horizon.hours, "signal_label": "stable", "score": Decimal("0.85"), "reason_codes": ["stable_drift"], "guardrail_status": "pass"},
+                {
+                    "item_id": item_id,
+                    "horizon_hours": horizon.hours,
+                    "signal_label": "stable",
+                    "score": Decimal("0.85"),
+                    "reason_codes": ["stable_drift"],
+                    "guardrail_status": "pass",
+                },
             )()
 
         async def build_explanation(self, *, item_id: int, horizon: ForecastHorizon) -> Any:
             return type(
                 "Explanation",
                 (),
-                {"item_id": item_id, "horizon_hours": horizon.hours, "champion_model_name": self._selection.selected_model_name, "champion_model_version": self._selection.selected_model_version, "metric_mae": Decimal("10.0"), "metric_directional_accuracy": Decimal("0.6"), "liquidity_observations_dropped": 1, "drift_ratio": Decimal("1.0"), "interval_width": Decimal("200.0"), "freshness_minutes": 20, "reason_codes": ["stable_drift"]},
+                {
+                    "item_id": item_id,
+                    "horizon_hours": horizon.hours,
+                    "champion_model_name": self._selection.selected_model_name,
+                    "champion_model_version": self._selection.selected_model_version,
+                    "metric_mae": Decimal("10.0"),
+                    "metric_directional_accuracy": Decimal("0.6"),
+                    "liquidity_observations_dropped": 1,
+                    "drift_ratio": Decimal("1.0"),
+                    "interval_width": Decimal("200.0"),
+                    "freshness_minutes": 20,
+                    "reason_codes": ["stable_drift"],
+                },
             )()
 
     app = _build_test_app()

@@ -56,6 +56,21 @@ Possible later enhancement for parser robustness and invariants.
 
 Normal test runs must not depend on live OSRS API access.
 
+## Known test dependency migration
+
+The current FastAPI/Starlette `TestClient` emits a deprecation warning recommending the
+future `httpx2` client. The project still depends on `httpx` for both application transport
+and tests, and `httpx2` is not part of the locked dependency set. Migrate the API tests once
+that client is deliberately adopted; until then, the warning is expected and does not affect
+test results.
+
+## Cycle 3 readiness verification (2026-08-16)
+
+- Added a missing-forecast regression test for synthesis summary and explanation paths.
+- Added a PostgreSQL integration test for persisted watchlist CRUD with isolated cleanup.
+- Quality gates include Ruff formatting/linting, strict mypy over `src` and `tests`, the
+  infrastructure-free test suite, and PostgreSQL integration tests in CI.
+
 ## Phase 1 Completion Evidence (2026-08-02)
 
 Verification run summary:

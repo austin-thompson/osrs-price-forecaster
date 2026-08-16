@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -14,7 +13,9 @@ class FakeSession:
 
 
 class FakeSynthesisService:
-    def __init__(self, summary: dict[str, Any], signal: dict[str, Any], explanation: dict[str, Any]) -> None:
+    def __init__(
+        self, summary: dict[str, Any], signal: dict[str, Any], explanation: dict[str, Any]
+    ) -> None:
         self._summary = summary
         self._signal = signal
         self._explanation = explanation

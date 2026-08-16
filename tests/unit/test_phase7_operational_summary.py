@@ -1,8 +1,9 @@
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from osrs_price_forecaster.api.dependencies import get_db_session
 from osrs_price_forecaster.api.routes.v1 import OperationalService, router
@@ -94,7 +95,7 @@ async def test_operational_service_uses_latest_observation_freshness(monkeypatch
         type("PriceObservationModel", (), {"ingested_at": object()}),
     )
 
-    service = OperationalService(session=fake_session)
+    service = OperationalService(session=cast(AsyncSession, fake_session))
     status = await service.build_status()
     assert status.freshness_status == "stale"
     assert status.service_status == "degraded"

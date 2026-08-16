@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from osrs_price_forecaster import __version__
 from osrs_price_forecaster.api.routes.health import router as health_router
 from osrs_price_forecaster.api.routes.v1 import router as v1_router
 from osrs_price_forecaster.core.config import Settings, get_settings
@@ -12,7 +13,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="osrs-price-forecaster",
-        version="0.1.0",
+        version=__version__,
         docs_url="/docs",
         redoc_url="/redoc",
     )

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from osrs_price_forecaster.domain.entities import (
     ForecastResult,
     ModelEvaluationRecord,
-    ModelSelectionRecord,
 )
 from osrs_price_forecaster.domain.repositories import (
     ForecastRepository,
@@ -76,25 +75,29 @@ class SynthesisService:
         horizon: ForecastHorizon,
     ) -> ItemSummary:
         forecast = await self._latest_forecast(item_id=item_id, horizon=horizon)
-        evaluation = await self._latest_evaluation(item_id=item_id, horizon=horizon)
-        selection = await self.selection_repository.latest_selection(item_id=item_id, horizon=horizon)
+        selection = await self.selection_repository.latest_selection(
+            item_id=item_id, horizon=horizon
+        )
 
         signal = await self.build_signal(item_id=item_id, horizon=horizon)
         reason_codes = signal.reason_codes
         liquidity_status = self._derive_liquidity_status(forecast)
         freshness_status = self._derive_freshness_status(forecast)
 
-        interval_low = self._decimal_from_metadata(forecast.metadata, "prediction_interval_low")
-        interval_high = self._decimal_from_metadata(forecast.metadata, "prediction_interval_high")
+        metadata = forecast.metadata if forecast is not None else {}
+        interval_low = self._decimal_from_metadata(metadata, "prediction_interval_low")
+        interval_high = self._decimal_from_metadata(metadata, "prediction_interval_high")
         drift_state = forecast.metadata.get("drift_state") if forecast is not None else None
-        drift_ratio = self._decimal_from_metadata(forecast.metadata, "drift_ratio")
+        drift_ratio = self._decimal_from_metadata(metadata, "drift_ratio")
 
         return ItemSummary(
             item_id=item_id,
             horizon_hours=horizon.hours,
             generated_at=datetime.now(UTC),
             champion_model_name=selection.selected_model_name if selection is not None else None,
-            champion_model_version=selection.selected_model_version if selection is not None else None,
+            champion_model_version=selection.selected_model_version
+            if selection is not None
+            else None,
             predicted_mid_price=forecast.predicted_mid_price if forecast is not None else None,
             prediction_interval_low=interval_low,
             prediction_interval_high=interval_high,
@@ -115,7 +118,9 @@ class SynthesisService:
     ) -> ItemSignal:
         forecast = await self._latest_forecast(item_id=item_id, horizon=horizon)
         evaluation = await self._latest_evaluation(item_id=item_id, horizon=horizon)
-        selection = await self.selection_repository.latest_selection(item_id=item_id, horizon=horizon)
+        selection = await self.selection_repository.latest_selection(
+            item_id=item_id, horizon=horizon
+        )
 
         if forecast is None:
             return ItemSignal(
@@ -190,25 +195,30 @@ class SynthesisService:
     ) -> ItemExplanation:
         forecast = await self._latest_forecast(item_id=item_id, horizon=horizon)
         evaluation = await self._latest_evaluation(item_id=item_id, horizon=horizon)
-        selection = await self.selection_repository.latest_selection(item_id=item_id, horizon=horizon)
+        selection = await self.selection_repository.latest_selection(
+            item_id=item_id, horizon=horizon
+        )
 
         freshness_minutes = None
         if forecast is not None:
-            freshness_minutes = int((datetime.now(UTC) - forecast.forecast_created_at).total_seconds() // 60)
+            freshness_minutes = int(
+                (datetime.now(UTC) - forecast.forecast_created_at).total_seconds() // 60
+            )
 
         liquidity_observations_dropped = None
         if forecast is not None:
-            liquidity_observations_dropped = int(
-                self._int_from_metadata(forecast.metadata, "liquidity_observations_dropped")
+            liquidity_observations_dropped = self._int_from_metadata(
+                forecast.metadata, "liquidity_observations_dropped"
             )
 
-        interval_low = self._decimal_from_metadata(forecast.metadata, "prediction_interval_low")
-        interval_high = self._decimal_from_metadata(forecast.metadata, "prediction_interval_high")
+        metadata = forecast.metadata if forecast is not None else {}
+        interval_low = self._decimal_from_metadata(metadata, "prediction_interval_low")
+        interval_high = self._decimal_from_metadata(metadata, "prediction_interval_high")
         interval_width = None
         if interval_low is not None and interval_high is not None:
             interval_width = abs(interval_high - interval_low)
 
-        drift_ratio = self._decimal_from_metadata(forecast.metadata, "drift_ratio")
+        drift_ratio = self._decimal_from_metadata(metadata, "drift_ratio")
         reason_codes = []
         if forecast is None:
             reason_codes.append("missing_forecast")
@@ -224,9 +234,13 @@ class SynthesisService:
             item_id=item_id,
             horizon_hours=horizon.hours,
             champion_model_name=selection.selected_model_name if selection is not None else None,
-            champion_model_version=selection.selected_model_version if selection is not None else None,
+            champion_model_version=selection.selected_model_version
+            if selection is not None
+            else None,
             metric_mae=evaluation.metric_mae if evaluation is not None else None,
-            metric_directional_accuracy=evaluation.metric_directional_accuracy if evaluation is not None else None,
+            metric_directional_accuracy=evaluation.metric_directional_accuracy
+            if evaluation is not None
+            else None,
             liquidity_observations_dropped=liquidity_observations_dropped,
             drift_ratio=drift_ratio,
             interval_width=interval_width,
@@ -234,12 +248,20 @@ class SynthesisService:
             reason_codes=reason_codes,
         )
 
-    async def _latest_forecast(self, *, item_id: int, horizon: ForecastHorizon) -> ForecastResult | None:
-        forecasts = await self.forecast_repository.list_forecasts(item_id=item_id, horizon=horizon, limit=1)
+    async def _latest_forecast(
+        self, *, item_id: int, horizon: ForecastHorizon
+    ) -> ForecastResult | None:
+        forecasts = await self.forecast_repository.list_forecasts(
+            item_id=item_id, horizon=horizon, limit=1
+        )
         return forecasts[0] if forecasts else None
 
-    async def _latest_evaluation(self, *, item_id: int, horizon: ForecastHorizon) -> ModelEvaluationRecord | None:
-        evaluations = await self.evaluation_repository.list_evaluations(item_id=item_id, horizon=horizon, limit=1)
+    async def _latest_evaluation(
+        self, *, item_id: int, horizon: ForecastHorizon
+    ) -> ModelEvaluationRecord | None:
+        evaluations = await self.evaluation_repository.list_evaluations(
+            item_id=item_id, horizon=horizon, limit=1
+        )
         return evaluations[0] if evaluations else None
 
     def _derive_liquidity_status(self, forecast: ForecastResult | None) -> str:

@@ -1,2 +1,3 @@
-Integration tests requiring PostgreSQL are added in later phases.
-Phase 0 includes unit and contract tests that avoid live OSRS calls.
+PostgreSQL integration coverage includes a persisted watchlist CRUD round trip.
+Run it against a migrated disposable database with `make test-integration`.
+Unit and contract tests continue to avoid live OSRS calls.

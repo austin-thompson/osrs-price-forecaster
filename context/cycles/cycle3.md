@@ -1,6 +1,6 @@
 # Cycle 3 — Analyst workflow and reliability refinement
 
-Branch: TBD
+Branch: feat/cycle3_analyst-workflow
 Started: 2026-08-08
 Status: Planned
 
