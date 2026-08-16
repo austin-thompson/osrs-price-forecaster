@@ -21,10 +21,16 @@ See [scripts/LOCAL_LIVE_RUN.md](LOCAL_LIVE_RUN.md) for the full workflow and exp
 
 Run the end-to-end live check workflow:
 
-- `bash scripts/live_verification.sh`
+- Set `OSRS_WIKI_USER_AGENT` to a descriptive value with a real contact.
+- Run `bash scripts/live_verification.sh`.
+
+The workflow rebuilds the stack, applies migrations, runs one collector and
+forecaster cycle, checks representative API endpoints, and asserts that forecast,
+evaluation, drift, and prediction-interval data were persisted. On failure it
+prints the current Compose state and recent API logs.
 
 Optional environment overrides:
 
-- `OSRS_WIKI_USER_AGENT` (default: `osrs-price-forecaster/0.2.0-alpha (contact: local-dev@example.com)`)
+- `OSRS_WIKI_USER_AGENT` (required; must not use the placeholder contact)
 - `ITEM_ID` (default: `4151`)
 - `HORIZON_HOURS` (default: `1`)
