@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +12,7 @@ from osrs_price_forecaster.api.dependencies import get_db_session
 from osrs_price_forecaster.application.recommendations.service import RecommendationService
 from osrs_price_forecaster.application.synthesis.service import SynthesisService
 from osrs_price_forecaster.core.config import get_settings
-from osrs_price_forecaster.domain.entities import ModelEvaluationRecord
+from osrs_price_forecaster.domain.entities import ModelEvaluationRecord, SavedAnalysisPreference
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 from osrs_price_forecaster.infrastructure.database.models import PriceObservationModel
 from osrs_price_forecaster.infrastructure.database.repositories import (
@@ -21,6 +21,7 @@ from osrs_price_forecaster.infrastructure.database.repositories import (
     SqlAlchemyModelEvaluationRepository,
     SqlAlchemyModelSelectionRepository,
     SqlAlchemyPriceObservationRepository,
+    SqlAlchemySavedAnalysisPreferenceRepository,
     SqlAlchemySavedWatchlistRepository,
 )
 
@@ -231,6 +232,48 @@ class WatchlistResponse(BaseModel):
 class CreateWatchlistRequest(BaseModel):
     name: str
     item_ids: list[int]
+
+
+SignalLabel = Literal["stable", "caution", "avoid"]
+LiquidityStatus = Literal["healthy", "risky", "unknown"]
+DriftState = Literal["improved", "stable", "worsened", "insufficient_history", "unknown"]
+
+
+class SavedAnalysisPreferenceResponse(BaseModel):
+    id: int
+    name: str
+    horizon_hours: int
+    signal_labels: list[str]
+    liquidity_statuses: list[str]
+    drift_states: list[str]
+    top_n: int
+    watchlist_id: int | None
+    created_at: datetime
+
+
+class CreateSavedAnalysisPreferenceRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    horizon_hours: int = Field(gt=0)
+    signal_labels: list[SignalLabel] = Field(default_factory=list)
+    liquidity_statuses: list[LiquidityStatus] = Field(default_factory=list)
+    drift_states: list[DriftState] = Field(default_factory=list)
+    top_n: int = Field(ge=1, le=500)
+    watchlist_id: int | None = Field(default=None, gt=0)
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, value: str) -> str:
+        name = value.strip()
+        if not name:
+            raise ValueError("name must not be empty")
+        return name
+
+    @field_validator("signal_labels", "liquidity_statuses", "drift_states")
+    @classmethod
+    def reject_duplicate_filters(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("filter values must not contain duplicates")
+        return value
 
 
 class RecommendationResponse(BaseModel):
@@ -868,6 +911,98 @@ async def delete_watchlist(
     deleted = await repository.delete_watchlist(watchlist_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="watchlist not found")
+
+
+def _saved_preference_response(
+    preference: SavedAnalysisPreference,
+) -> SavedAnalysisPreferenceResponse:
+    return SavedAnalysisPreferenceResponse(
+        id=preference.id,
+        name=preference.name,
+        horizon_hours=preference.horizon.hours,
+        signal_labels=preference.signal_labels,
+        liquidity_statuses=preference.liquidity_statuses,
+        drift_states=preference.drift_states,
+        top_n=preference.top_n,
+        watchlist_id=preference.watchlist_id,
+        created_at=preference.created_at,
+    )
+
+
+@router.get("/preferences", response_model=list[SavedAnalysisPreferenceResponse])
+async def list_saved_analysis_preferences(
+    session: AsyncSession = Depends(get_db_session),
+) -> list[SavedAnalysisPreferenceResponse]:
+    repository = SqlAlchemySavedAnalysisPreferenceRepository(session)
+    preferences = await repository.list_preferences()
+    return [_saved_preference_response(preference) for preference in preferences]
+
+
+@router.post("/preferences", response_model=SavedAnalysisPreferenceResponse)
+async def create_saved_analysis_preference(
+    payload: CreateSavedAnalysisPreferenceRequest,
+    session: AsyncSession = Depends(get_db_session),
+) -> SavedAnalysisPreferenceResponse:
+    settings = get_settings()
+    if payload.horizon_hours not in settings.forecast_horizons_hours:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"horizon_hours must be one of {settings.forecast_horizons_hours}",
+        )
+
+    if payload.watchlist_id is not None:
+        watchlist_repository = SqlAlchemySavedWatchlistRepository(session)
+        if await watchlist_repository.get_watchlist(payload.watchlist_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="watchlist not found",
+            )
+
+    repository = SqlAlchemySavedAnalysisPreferenceRepository(session)
+    preference = await repository.create_preference(
+        name=payload.name,
+        horizon=ForecastHorizon(hours=payload.horizon_hours),
+        signal_labels=list(payload.signal_labels),
+        liquidity_statuses=list(payload.liquidity_statuses),
+        drift_states=list(payload.drift_states),
+        top_n=payload.top_n,
+        watchlist_id=payload.watchlist_id,
+    )
+    return _saved_preference_response(preference)
+
+
+@router.get("/preferences/{preference_id}", response_model=SavedAnalysisPreferenceResponse)
+async def get_saved_analysis_preference(
+    preference_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> SavedAnalysisPreferenceResponse:
+    if preference_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="preference_id must be positive",
+        )
+
+    repository = SqlAlchemySavedAnalysisPreferenceRepository(session)
+    preference = await repository.get_preference(preference_id)
+    if preference is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="preference not found")
+    return _saved_preference_response(preference)
+
+
+@router.delete("/preferences/{preference_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_saved_analysis_preference(
+    preference_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    if preference_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="preference_id must be positive",
+        )
+
+    repository = SqlAlchemySavedAnalysisPreferenceRepository(session)
+    if not await repository.delete_preference(preference_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="preference not found")
 
 
 @router.get("/recommendations", response_model=list[RecommendationResponse])

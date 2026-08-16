@@ -78,7 +78,7 @@ Success criteria:
 | ---- | ---------------------------------------------------------------- | --------- |
 | 1    | Define the saved-preference domain and API contract              | Completed |
 | 2    | Add the saved-preference migration and repository                | Completed |
-| 3    | Implement saved-preference CRUD endpoints and tests              | Pending   |
+| 3    | Implement saved-preference CRUD endpoints and tests              | Completed |
 | 4    | Document analysis endpoint boundaries                            | Pending   |
 | 5    | Enrich explanation and cohort-comparison responses               | Pending   |
 | 6    | Extract configurable operational freshness thresholds            | Pending   |
