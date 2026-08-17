@@ -2,7 +2,8 @@
 
 Branch: feat/cycle3_analyst-workflow
 Started: 2026-08-08
-Status: Active (2026-08-16)
+Completed: 2026-08-16
+Status: Completed
 
 ## Objective
 
@@ -83,7 +84,17 @@ Success criteria:
 | 5    | Enrich explanation and cohort-comparison responses               | Completed |
 | 6    | Extract configurable operational freshness thresholds            | Completed |
 | 7    | Add warning classifications and operational regression coverage  | Completed |
-| 8    | Run full live verification and close Cycle 3                     | Pending   |
+| 8    | Run full live verification and close Cycle 3                     | Completed |
+
+## Closure summary
+
+Cycle 3 delivered reusable saved-analysis preferences, explicit analysis endpoint boundaries,
+richer explanation and cohort evidence, configurable operational freshness thresholds, and
+classified operational warnings. Live verification covered the full local stack, real collection
+and forecasting, representative Cycle 3 APIs, database persistence, and cleanup of temporary data.
+
+Detailed runtime results are recorded in `TESTING.md` under “Cycle 3 Live Verification
+(2026-08-16).” The branch is ready for review; merge and release remain separate actions.
 
 ## Saved-preference contract decision
 

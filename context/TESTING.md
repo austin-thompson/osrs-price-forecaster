@@ -230,3 +230,41 @@ Follow-up actions after Phase 2 closure:
 
 - Continue collecting realized-window interval coverage as additional forecast-target timestamps mature.
 - Use Phase 3 user-facing surfaces to expose benchmark trend history and calibration summaries.
+
+## Cycle 3 Live Verification (2026-08-16)
+
+Run scope:
+
+- Rebuilt the API image and started PostgreSQL and API containers with health waits.
+- Applied all migrations through `20260816_0003`.
+- Ran one live OSRS Wiki collector cycle and one forecaster cycle for tracked items 4151 and 11840
+  across the configured 1h, 6h, and 24h horizons.
+- Exercised saved-preference CRUD with a temporary record and verified cleanup.
+- Exercised enriched explanation, cohort-comparison, operational-summary, and backtesting-report
+  responses.
+- Ran Ruff formatting/lint checks, mypy across source and tests, and all infrastructure-free tests.
+
+Observed evidence:
+
+- `/health/live` and `/health/ready`: `ok`.
+- Explanation response: 3 deterministic evidence statements with normalized evidence states.
+- Cohort comparison: 2 requested items returned in request order with primary reason and narrative.
+- Operational summary: service `ok`, freshness `healthy`, and structured `warning_details` present.
+- Saved preference: create, list, retrieve, and delete succeeded; 0 verification records remained.
+- Model evaluations: 60 persisted rows.
+- Forecasts: 12 persisted rows; all 12 contain drift and prediction-interval metadata.
+- Backtesting report for item 4151 / 1h: 5 leaderboard rows; champion `naive_last`.
+- Local static/unit verification: 43 passed, 2 integration tests deselected because clean-database
+  integration coverage runs in CI.
+
+Pass/fail assessment:
+
+- Saved analyst workflow: PASS.
+- Explanation and cohort evidence enrichment: PASS.
+- Configurable operational freshness and warning classifications: PASS.
+- Forecast/evaluation persistence and representative analytics: PASS.
+- Live container health and external collection: PASS.
+
+The Windows checkout exposed CRLF handling in the Bash verifier before Docker execution. Shell files
+are now pinned to LF through `.gitattributes`; the equivalent verification stages were executed
+directly through Docker Compose during this run.
