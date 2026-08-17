@@ -184,7 +184,11 @@ class ItemExplanationResponse(BaseModel):
     drift_ratio: Decimal | None
     interval_width: Decimal | None
     freshness_minutes: int | None
+    drift_state: str
+    liquidity_status: str
+    freshness_status: str
     reason_codes: list[str]
+    evidence_summary: list[str]
 
 
 class AnalysisSummaryResponse(BaseModel):
@@ -216,6 +220,12 @@ class CohortComparisonItemResponse(BaseModel):
     champion_model_version: str | None
     liquidity_status: str
     freshness_status: str
+    drift_state: str
+    drift_ratio: Decimal | None
+    interval_width: Decimal | None
+    freshness_minutes: int | None
+    primary_reason_code: str
+    comparison_summary: str
 
 
 class CohortComparisonResponse(BaseModel):
@@ -663,7 +673,11 @@ async def item_explanation(
         drift_ratio=explanation.drift_ratio,
         interval_width=explanation.interval_width,
         freshness_minutes=explanation.freshness_minutes,
+        drift_state=explanation.drift_state,
+        liquidity_status=explanation.liquidity_status,
+        freshness_status=explanation.freshness_status,
         reason_codes=explanation.reason_codes,
+        evidence_summary=explanation.evidence_summary,
     )
 
 
@@ -769,17 +783,36 @@ async def cohort_comparison(
         signal = await service.build_signal(
             item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours)
         )
+        explanation = await service.build_explanation(
+            item_id=item_id, horizon=ForecastHorizon(hours=horizon_hours)
+        )
+        reason_codes = _get_value(signal, "reason_codes", [])
+        primary_reason_code = reason_codes[0] if reason_codes else "no_active_warnings"
+        signal_label = _get_value(signal, "signal_label", "avoid")
+        liquidity_status = _get_value(summary, "liquidity_status", "unknown")
+        freshness_status = _get_value(summary, "freshness_status", "stale")
+        drift_state = _get_value(explanation, "drift_state", "unknown")
         items.append(
             CohortComparisonItemResponse(
                 item_id=item_id,
-                signal_label=_get_value(signal, "signal_label", "avoid"),
+                signal_label=signal_label,
                 score=_get_value(signal, "score", Decimal("0")),
-                reason_codes=_get_value(signal, "reason_codes", []),
+                reason_codes=reason_codes,
                 guardrail_status=_get_value(signal, "guardrail_status", "warn"),
                 champion_model_name=_get_value(summary, "champion_model_name"),
                 champion_model_version=_get_value(summary, "champion_model_version"),
-                liquidity_status=_get_value(summary, "liquidity_status", "unknown"),
-                freshness_status=_get_value(summary, "freshness_status", "stale"),
+                liquidity_status=liquidity_status,
+                freshness_status=freshness_status,
+                drift_state=drift_state,
+                drift_ratio=_get_value(explanation, "drift_ratio"),
+                interval_width=_get_value(explanation, "interval_width"),
+                freshness_minutes=_get_value(explanation, "freshness_minutes"),
+                primary_reason_code=primary_reason_code,
+                comparison_summary=(
+                    f"Signal is {signal_label}; primary reason is {primary_reason_code}; "
+                    f"freshness is {freshness_status}, liquidity is {liquidity_status}, "
+                    f"and drift is {drift_state}."
+                ),
             )
         )
 

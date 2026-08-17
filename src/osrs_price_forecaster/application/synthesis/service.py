@@ -55,7 +55,11 @@ class ItemExplanation:
     drift_ratio: Decimal | None
     interval_width: Decimal | None
     freshness_minutes: int | None
+    drift_state: str
+    liquidity_status: str
+    freshness_status: str
     reason_codes: list[str]
+    evidence_summary: list[str]
 
 
 @dataclass(slots=True)
@@ -219,16 +223,28 @@ class SynthesisService:
             interval_width = abs(interval_high - interval_low)
 
         drift_ratio = self._decimal_from_metadata(metadata, "drift_ratio")
+        drift_state = metadata.get("drift_state", "unknown")
+        liquidity_status = self._derive_liquidity_status(forecast)
+        freshness_status = self._derive_freshness_status(forecast)
         reason_codes = []
         if forecast is None:
             reason_codes.append("missing_forecast")
         else:
-            if self._derive_freshness_status(forecast) == "stale":
+            if freshness_status == "stale":
                 reason_codes.append("stale_data")
-            if self._derive_liquidity_status(forecast) != "healthy":
+            if liquidity_status != "healthy":
                 reason_codes.append("liquidity_risk")
-            if forecast.metadata.get("drift_state") == "worsened":
+            if drift_state == "worsened":
                 reason_codes.append("drift_worsened")
+
+        evidence_summary = self._build_evidence_summary(
+            forecast_present=forecast is not None,
+            selection_present=selection is not None,
+            evaluation_present=evaluation is not None,
+            drift_state=drift_state,
+            liquidity_status=liquidity_status,
+            freshness_status=freshness_status,
+        )
 
         return ItemExplanation(
             item_id=item_id,
@@ -245,8 +261,36 @@ class SynthesisService:
             drift_ratio=drift_ratio,
             interval_width=interval_width,
             freshness_minutes=freshness_minutes,
+            drift_state=drift_state,
+            liquidity_status=liquidity_status,
+            freshness_status=freshness_status,
             reason_codes=reason_codes,
+            evidence_summary=evidence_summary,
         )
+
+    def _build_evidence_summary(
+        self,
+        *,
+        forecast_present: bool,
+        selection_present: bool,
+        evaluation_present: bool,
+        drift_state: str,
+        liquidity_status: str,
+        freshness_status: str,
+    ) -> list[str]:
+        if not forecast_present:
+            return ["No current forecast is available for this item and horizon."]
+
+        statements = [
+            f"Forecast freshness is {freshness_status}.",
+            f"Liquidity evidence is {liquidity_status}.",
+            f"Recent model drift is {drift_state}.",
+        ]
+        if not selection_present:
+            statements.append("No champion model selection is available.")
+        if not evaluation_present:
+            statements.append("No recent model evaluation is available.")
+        return statements
 
     async def _latest_forecast(
         self, *, item_id: int, horizon: ForecastHorizon

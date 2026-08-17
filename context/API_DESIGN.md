@@ -43,6 +43,8 @@ Phase 3 synthesis routes:
   - Includes champion_model_name, mae, directional_accuracy,
     liquidity_observations_dropped, drift_ratio, interval_width, freshness_minutes,
     and evidence-specific reason codes.
+  - Also returns normalized drift, liquidity, and freshness states plus deterministic evidence
+    statements; these statements interpret persisted evidence and do not predict outcomes.
 
 Phase 4+ decision routes:
 
@@ -68,6 +70,8 @@ Phase 6 analysis routes (Cycle 2):
 - GET /api/v1/cohort-comparison
   - Accepts a list of item IDs and returns compact current signal state side by side for
     one requested horizon, retaining request order.
+  - Each row includes drift and uncertainty evidence, the first authoritative signal reason as
+    `primary_reason_code` (or `no_active_warnings`), and a deterministic comparison summary.
 
 ### Analysis endpoint boundaries
 

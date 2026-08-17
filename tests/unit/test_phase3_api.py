@@ -178,7 +178,15 @@ def test_phase3_summary_endpoint_returns_synthesis_payload(monkeypatch: Any) -> 
                     "drift_ratio": Decimal("1.0"),
                     "interval_width": Decimal("200.0"),
                     "freshness_minutes": 20,
+                    "drift_state": "stable",
+                    "liquidity_status": "healthy",
+                    "freshness_status": "fresh",
                     "reason_codes": ["stable_drift"],
+                    "evidence_summary": [
+                        "Forecast freshness is fresh.",
+                        "Liquidity evidence is healthy.",
+                        "Recent model drift is stable.",
+                    ],
                 },
             )()
 

@@ -196,5 +196,11 @@ def test_summary_and_explanation_handle_missing_forecast() -> None:
         assert explanation.liquidity_observations_dropped is None
         assert explanation.interval_width is None
         assert explanation.reason_codes == ["missing_forecast"]
+        assert explanation.drift_state == "unknown"
+        assert explanation.liquidity_status == "unknown"
+        assert explanation.freshness_status == "stale"
+        assert explanation.evidence_summary == [
+            "No current forecast is available for this item and horizon."
+        ]
 
     asyncio.run(run())
