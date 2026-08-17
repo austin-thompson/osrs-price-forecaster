@@ -6,8 +6,8 @@ Cycle 3 completed on `feat/cycle3_analyst-workflow` on 2026-08-16. It delivered 
 
 ## Next cycle
 
-Cycle 4 is reserved for the next prioritized delivery objective. Its scope and branch are
-intentionally undecided pending review of Cycle 3 evidence and current user needs. See
+Cycle 4 is reserved on `feat/cycle4-planning` for the next prioritized delivery objective. Its
+scope is intentionally undecided pending review of Cycle 3 evidence and current user needs. See
 [cycles/cycle4.md](cycles/cycle4.md) for the planning placeholder.
 
 ## Phase 0: Architecture and repository foundation

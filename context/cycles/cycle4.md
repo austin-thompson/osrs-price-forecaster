@@ -1,6 +1,6 @@
 # Cycle 4 — Planning placeholder
 
-Branch: TBD
+Branch: feat/cycle4-planning
 Status: Placeholder
 
 ## Purpose
