@@ -4,6 +4,12 @@
 
 Cycle 3 completed on `feat/cycle3_analyst-workflow` on 2026-08-16. It delivered saved analysis preferences, deeper explanation and cohort evidence, and configurable, classified operational freshness warnings. See [cycles/cycle3.md](cycles/cycle3.md) for scope and verification links.
 
+## Next cycle
+
+Cycle 4 is reserved for the next prioritized delivery objective. Its scope and branch are
+intentionally undecided pending review of Cycle 3 evidence and current user needs. See
+[cycles/cycle4.md](cycles/cycle4.md) for the planning placeholder.
+
 ## Phase 0: Architecture and repository foundation
 
 Status: Completed (verified 2026-08-01).
