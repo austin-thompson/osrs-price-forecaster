@@ -823,7 +823,12 @@ async def cohort_comparison(
 async def operational_summary(
     session: AsyncSession = Depends(get_db_session),
 ) -> OperationalSummaryResponse:
-    service = OperationalService(session=session)
+    settings = get_settings()
+    service = OperationalService(
+        session=session,
+        freshness_warning_minutes=settings.operational_freshness_warning_minutes,
+        freshness_stale_minutes=settings.operational_freshness_stale_minutes,
+    )
     status = await service.build_status()
     return OperationalSummaryResponse(
         generated_at=status["generated_at"] if isinstance(status, dict) else status.generated_at,
@@ -841,8 +846,16 @@ async def operational_summary(
 
 
 class OperationalService:
-    def __init__(self, *, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        *,
+        session: AsyncSession,
+        freshness_warning_minutes: int = 90,
+        freshness_stale_minutes: int = 180,
+    ) -> None:
         self.session = session
+        self.freshness_warning_minutes = freshness_warning_minutes
+        self.freshness_stale_minutes = freshness_stale_minutes
 
     async def build_status(self) -> OperationalSummary:
         stmt = (
@@ -865,10 +878,10 @@ class OperationalService:
         freshness_status = "healthy"
         warnings: list[str] = []
         age_minutes = int((datetime.now(UTC) - latest_ingested_at).total_seconds() // 60)
-        if age_minutes >= 180:
+        if age_minutes >= self.freshness_stale_minutes:
             freshness_status = "stale"
             warnings.append("stale_ingestion")
-        elif age_minutes >= 90:
+        elif age_minutes >= self.freshness_warning_minutes:
             freshness_status = "warning"
             warnings.append("ingestion_delay")
 

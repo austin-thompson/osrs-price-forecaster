@@ -100,3 +100,34 @@ async def test_operational_service_uses_latest_observation_freshness(monkeypatch
     assert status.freshness_status == "stale"
     assert status.service_status == "degraded"
     assert "stale_ingestion" in status.warnings
+
+
+async def test_operational_service_uses_configured_freshness_thresholds(
+    monkeypatch: Any,
+) -> None:
+    latest_ingested_at = datetime.now(UTC) - timedelta(minutes=50)
+    fake_session = FakeSessionWithLatestObservation(latest_ingested_at)
+
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.select",
+        lambda *args, **kwargs: FakeQuery(),
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.desc",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.PriceObservationModel",
+        type("PriceObservationModel", (), {"ingested_at": object()}),
+    )
+
+    service = OperationalService(
+        session=cast(AsyncSession, fake_session),
+        freshness_warning_minutes=15,
+        freshness_stale_minutes=45,
+    )
+    status = await service.build_status()
+
+    assert status.freshness_status == "stale"
+    assert status.warnings == ["stale_ingestion"]

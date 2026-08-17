@@ -81,7 +81,7 @@ Success criteria:
 | 3    | Implement saved-preference CRUD endpoints and tests              | Completed |
 | 4    | Document analysis endpoint boundaries                            | Completed |
 | 5    | Enrich explanation and cohort-comparison responses               | Completed |
-| 6    | Extract configurable operational freshness thresholds            | Pending   |
+| 6    | Extract configurable operational freshness thresholds            | Completed |
 | 7    | Add warning classifications and operational regression coverage  | Pending   |
 | 8    | Run full live verification and close Cycle 3                     | Pending   |
 
