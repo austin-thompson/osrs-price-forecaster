@@ -7,12 +7,12 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml README.md /app/
+COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
 COPY migrations /app/migrations
 COPY alembic.ini /app/alembic.ini
 
-RUN uv sync --frozen --no-dev || uv sync --no-dev
+RUN uv sync --frozen --no-dev
 
 ENV PATH="/app/.venv/Scripts:/app/.venv/bin:$PATH"
 

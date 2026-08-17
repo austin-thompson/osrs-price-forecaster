@@ -16,7 +16,9 @@ class FakeRecommendationService:
     def __init__(self, recommendations: list[dict[str, Any]]) -> None:
         self._recommendations = recommendations
 
-    async def list_recommendations(self, *, horizon_hours: int, limit: int = 100) -> list[dict[str, Any]]:
+    async def list_recommendations(
+        self, *, horizon_hours: int, limit: int = 100
+    ) -> list[dict[str, Any]]:
         return self._recommendations
 
 
@@ -69,7 +71,9 @@ def test_rankings_endpoint_returns_ranked_items_with_positions(monkeypatch: Any)
     assert payload[1]["rank"] == 2
 
 
-def test_rankings_endpoint_applies_filters_and_returns_champion_model_fields(monkeypatch: Any) -> None:
+def test_rankings_endpoint_applies_filters_and_returns_champion_model_fields(
+    monkeypatch: Any,
+) -> None:
     recommendations = [
         {
             "item_id": 11840,

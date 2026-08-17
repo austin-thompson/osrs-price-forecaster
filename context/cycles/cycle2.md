@@ -1,4 +1,4 @@
-# Cycle 2 — Active planning
+# Cycle 2 — Closed
 
 Branch: feat/phase5-8-cycle2
 Started: 2026-08-08

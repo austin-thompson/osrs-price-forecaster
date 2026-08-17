@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -14,7 +13,9 @@ class FakeSession:
 
 
 class FakeSynthesisService:
-    def __init__(self, summary: dict[str, Any], signal: dict[str, Any], explanation: dict[str, Any]) -> None:
+    def __init__(
+        self, summary: dict[str, Any], signal: dict[str, Any], explanation: dict[str, Any]
+    ) -> None:
         self._summary = summary
         self._signal = signal
         self._explanation = explanation
@@ -67,7 +68,11 @@ def test_analysis_summary_endpoint_returns_combined_insights(monkeypatch: Any) -
         "drift_ratio": Decimal("0.1"),
         "interval_width": Decimal("25"),
         "freshness_minutes": 45,
+        "drift_state": "stable",
+        "liquidity_status": "healthy",
+        "freshness_status": "fresh",
         "reason_codes": ["stable_drift"],
+        "evidence_summary": ["Recent model drift is stable."],
     }
 
     monkeypatch.setattr(
@@ -122,7 +127,11 @@ def test_cohort_comparison_endpoint_returns_side_by_side_signals(monkeypatch: An
         "drift_ratio": Decimal("0.1"),
         "interval_width": Decimal("25"),
         "freshness_minutes": 45,
+        "drift_state": "stable",
+        "liquidity_status": "healthy",
+        "freshness_status": "fresh",
         "reason_codes": ["stable_drift"],
+        "evidence_summary": ["Recent model drift is stable."],
     }
 
     monkeypatch.setattr(
@@ -141,3 +150,12 @@ def test_cohort_comparison_endpoint_returns_side_by_side_signals(monkeypatch: An
     assert len(payload["items"]) == 2
     assert payload["items"][0]["item_id"] == 4151
     assert payload["items"][0]["signal_label"] == "stable"
+    assert payload["items"][0]["drift_state"] == "stable"
+    assert payload["items"][0]["drift_ratio"] == "0.1"
+    assert payload["items"][0]["interval_width"] == "25"
+    assert payload["items"][0]["freshness_minutes"] == 45
+    assert payload["items"][0]["primary_reason_code"] == "stable_drift"
+    assert payload["items"][0]["comparison_summary"] == (
+        "Signal is stable; primary reason is stable_drift; freshness is fresh, "
+        "liquidity is healthy, and drift is stable."
+    )

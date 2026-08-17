@@ -1,9 +1,8 @@
 # Roadmap
 
-## Current cycle
+## Latest completed cycle
 
-Cycle 2 — active on `feat/phase5-8-cycle2`.
-Expanding phases 5–8 beyond their initial MVP slices. See [cycles/cycle2.md](cycles/cycle2.md) for the gap analysis and order of operations.
+Cycle 3 completed on `feat/cycle3_analyst-workflow` on 2026-08-16. It delivered saved analysis preferences, deeper explanation and cohort evidence, and configurable, classified operational freshness warnings. See [cycles/cycle3.md](cycles/cycle3.md) for scope and verification links.
 
 ## Phase 0: Architecture and repository foundation
 
@@ -258,15 +257,15 @@ Personalization features can create avoidable complexity before the core MVP is 
 Exit conditions:
 The product supports repeatable analyst workflows with minimal setup overhead.
 
-## Cycle 3 direction (proposed)
+## Cycle 3 delivery
 
-A follow-on cycle can focus on sharpening the analyst workflow without expanding into a broad application platform. Recommended themes for Cycle 3 are:
+Cycle 3 sharpened the analyst workflow without expanding into a broad application platform. Delivered themes were:
 
 - richer saved-analysis workflows, including saved filters and horizon preferences;
 - deeper explanation and comparison views for signal behavior and model selection;
 - operational reliability improvements around ingestion freshness, health reporting, and regression coverage.
 
-This next cycle should stay tightly scoped to transparent forecasting, analyst usability, and repeatable local workflows. It should defer UI polish, autonomous decision-making, and multi-user collaboration until the core forecasting value is fully validated.
+The cycle remained scoped to transparent forecasting, analyst usability, and repeatable local workflows. UI polish, autonomous decision-making, and multi-user collaboration remain deferred.
 
 ## Scope guardrail for future phase planning
 

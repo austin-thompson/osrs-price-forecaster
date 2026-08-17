@@ -157,6 +157,42 @@ Uniqueness:
 
 - UNIQUE (item_id, horizon_hours, selected_at)
 
+### saved_watchlists
+
+Purpose:
+Persist local-first item collections for repeatable analyst workflows.
+
+Columns:
+
+- id BIGSERIAL PK
+- name VARCHAR(128) NOT NULL
+- item_ids JSONB NOT NULL DEFAULT '[]'::jsonb
+- created_at TIMESTAMPTZ NOT NULL
+
+### saved_analysis_preferences
+
+Purpose:
+Persist reusable ranking filters and horizon defaults for local-first analyst workflows.
+
+Columns:
+
+- id BIGSERIAL PK
+- name VARCHAR(128) NOT NULL
+- horizon_hours INTEGER NOT NULL
+- signal_labels JSONB NOT NULL DEFAULT '[]'::jsonb
+- liquidity_statuses JSONB NOT NULL DEFAULT '[]'::jsonb
+- drift_states JSONB NOT NULL DEFAULT '[]'::jsonb
+- top_n INTEGER NOT NULL
+- watchlist_id BIGINT NULL REFERENCES saved_watchlists(id) ON DELETE SET NULL
+- created_at TIMESTAMPTZ NOT NULL
+
+Constraints:
+
+- CHECK (horizon_hours > 0); application validation restricts values to configured horizons.
+- CHECK (top_n BETWEEN 1 AND 500).
+- Filter arrays contain unique values from the vocabularies defined in API_DESIGN.md.
+- Names are intentionally not unique in the local, single-user model.
+
 ## Timestamp semantics
 
 - source_timestamp: timestamp from OSRS source data.

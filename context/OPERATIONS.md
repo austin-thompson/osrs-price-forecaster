@@ -54,6 +54,26 @@
 
 All runtime options are environment-driven through pydantic-settings.
 
+Operational ingestion freshness uses two positive minute thresholds:
+
+- `OPERATIONAL_FRESHNESS_WARNING_MINUTES` defaults to 90.
+- `OPERATIONAL_FRESHNESS_STALE_MINUTES` defaults to 180 and must be greater than the warning
+  threshold.
+
+The operational summary is healthy below the warning threshold, warning at or above the warning
+threshold, and stale at or above the stale threshold. Invalid threshold ordering prevents startup
+instead of silently producing ambiguous freshness states.
+
+Operational warnings retain their stable string codes and also expose structured details:
+
+- `data_availability/error`: no persisted price observations are available.
+- `ingestion_freshness/warning`: ingestion has crossed the warning threshold.
+- `ingestion_freshness/error`: ingestion has crossed the stale threshold.
+
+These classifications cover service data availability and ingestion freshness only. Forecast and
+signal-quality reason codes remain on the synthesis endpoints so degraded evidence is not mistaken
+for an ingestion outage.
+
 ## Future observability
 
 Metrics and tracing are planned for later phases when needed.

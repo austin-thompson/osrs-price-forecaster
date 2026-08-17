@@ -1,8 +1,9 @@
 # Cycle 3 — Analyst workflow and reliability refinement
 
-Branch: TBD
+Branch: feat/cycle3_analyst-workflow
 Started: 2026-08-08
-Status: Planned
+Completed: 2026-08-16
+Status: Completed
 
 ## Objective
 
@@ -74,13 +75,37 @@ Success criteria:
 
 ## Order of operations
 
-| Step | Work item                                                          | Priority | Notes                                                         |
-| ---- | ------------------------------------------------------------------ | -------- | ------------------------------------------------------------- |
-| 1    | Define the saved-preferences contract and persistence model        | High     | Keep it simple and backward-compatible.                       |
-| 2    | Implement saved filter and horizon preference CRUD                 | High     | Follow the existing watchlist repository and route patterns.  |
-| 3    | Expand analysis-summary and cohort-comparison explanation payloads | High     | Focus on clarity and consistency across endpoints.            |
-| 4    | Add configurable freshness thresholds and richer warning logic     | Medium   | Make the operational summary easier to interpret.             |
-| 5    | Extend unit and integration coverage, then update context docs     | Medium   | Keep docs and implementation aligned as the cycle progresses. |
+| Step | Work item                                                        | Status    |
+| ---- | ---------------------------------------------------------------- | --------- |
+| 1    | Define the saved-preference domain and API contract              | Completed |
+| 2    | Add the saved-preference migration and repository                | Completed |
+| 3    | Implement saved-preference CRUD endpoints and tests              | Completed |
+| 4    | Document analysis endpoint boundaries                            | Completed |
+| 5    | Enrich explanation and cohort-comparison responses               | Completed |
+| 6    | Extract configurable operational freshness thresholds            | Completed |
+| 7    | Add warning classifications and operational regression coverage  | Completed |
+| 8    | Run full live verification and close Cycle 3                     | Completed |
+
+## Closure summary
+
+Cycle 3 delivered reusable saved-analysis preferences, explicit analysis endpoint boundaries,
+richer explanation and cohort evidence, configurable operational freshness thresholds, and
+classified operational warnings. Live verification covered the full local stack, real collection
+and forecasting, representative Cycle 3 APIs, database persistence, and cleanup of temporary data.
+
+Detailed runtime results are recorded in `TESTING.md` under “Cycle 3 Live Verification
+(2026-08-16).” The completed cycle is the basis for the `v0.3.0-alpha` preview release.
+
+## Saved-preference contract decision
+
+The Cycle 3 preference is a typed, local-first ranking configuration rather than arbitrary settings
+JSON. It stores a name, configured forecast horizon, signal/liquidity/drift filter lists, top-N limit,
+and an optional watchlist reference. Empty filter lists mean no restriction. Filter vocabularies and
+request/response behavior are normative in API_DESIGN.md; persistence details are normative in
+DATA_MODEL.md.
+
+Watchlist deletion sets the preference reference to null rather than deleting the preference. This
+keeps the saved filters reusable and avoids coupling the lifecycle of the two analyst artifacts.
 
 ## Risks and guardrails
 

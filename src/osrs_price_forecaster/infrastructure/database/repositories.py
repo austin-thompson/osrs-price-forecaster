@@ -12,6 +12,7 @@ from osrs_price_forecaster.domain.entities import (
     ModelEvaluationRecord,
     ModelSelectionRecord,
     PriceObservation,
+    SavedAnalysisPreference,
     Watchlist,
 )
 from osrs_price_forecaster.domain.repositories import (
@@ -20,6 +21,7 @@ from osrs_price_forecaster.domain.repositories import (
     ModelEvaluationRepository,
     ModelSelectionRepository,
     PriceObservationRepository,
+    SavedAnalysisPreferenceRepository,
 )
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 from osrs_price_forecaster.infrastructure.database.models import (
@@ -28,6 +30,7 @@ from osrs_price_forecaster.infrastructure.database.models import (
     ModelEvaluationModel,
     ModelSelectionModel,
     PriceObservationModel,
+    SavedAnalysisPreferenceModel,
     SavedWatchlistModel,
 )
 
@@ -109,6 +112,64 @@ class SqlAlchemySavedWatchlistRepository:
 
     async def delete_watchlist(self, watchlist_id: int) -> bool:
         stmt = select(SavedWatchlistModel).where(SavedWatchlistModel.id == watchlist_id)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            return False
+        await self._session.delete(row)
+        await self._session.commit()
+        return True
+
+
+class SqlAlchemySavedAnalysisPreferenceRepository(SavedAnalysisPreferenceRepository):
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list_preferences(self) -> list[SavedAnalysisPreference]:
+        stmt = select(SavedAnalysisPreferenceModel).order_by(
+            SavedAnalysisPreferenceModel.created_at.desc(),
+            SavedAnalysisPreferenceModel.id.desc(),
+        )
+        result = await self._session.execute(stmt)
+        return [_preference_model_to_entity(row) for row in result.scalars().all()]
+
+    async def create_preference(
+        self,
+        *,
+        name: str,
+        horizon: ForecastHorizon,
+        signal_labels: list[str],
+        liquidity_statuses: list[str],
+        drift_states: list[str],
+        top_n: int,
+        watchlist_id: int | None,
+    ) -> SavedAnalysisPreference:
+        record = SavedAnalysisPreferenceModel(
+            name=name,
+            horizon_hours=horizon.hours,
+            signal_labels=list(signal_labels),
+            liquidity_statuses=list(liquidity_statuses),
+            drift_states=list(drift_states),
+            top_n=top_n,
+            watchlist_id=watchlist_id,
+        )
+        self._session.add(record)
+        await self._session.commit()
+        await self._session.refresh(record)
+        return _preference_model_to_entity(record)
+
+    async def get_preference(self, preference_id: int) -> SavedAnalysisPreference | None:
+        stmt = select(SavedAnalysisPreferenceModel).where(
+            SavedAnalysisPreferenceModel.id == preference_id
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _preference_model_to_entity(row) if row is not None else None
+
+    async def delete_preference(self, preference_id: int) -> bool:
+        stmt = select(SavedAnalysisPreferenceModel).where(
+            SavedAnalysisPreferenceModel.id == preference_id
+        )
         result = await self._session.execute(stmt)
         row = result.scalar_one_or_none()
         if row is None:
@@ -394,6 +455,22 @@ def _evaluation_model_to_record(row: ModelEvaluationModel) -> ModelEvaluationRec
         metric_bias=Decimal(row.metric_bias) if row.metric_bias is not None else None,
         created_at=row.created_at,
         fold_count=fold_count,
+    )
+
+
+def _preference_model_to_entity(
+    row: SavedAnalysisPreferenceModel,
+) -> SavedAnalysisPreference:
+    return SavedAnalysisPreference(
+        id=row.id,
+        name=row.name,
+        horizon=ForecastHorizon(hours=row.horizon_hours),
+        signal_labels=list(row.signal_labels or []),
+        liquidity_statuses=list(row.liquidity_statuses or []),
+        drift_states=list(row.drift_states or []),
+        top_n=row.top_n,
+        watchlist_id=row.watchlist_id,
+        created_at=row.created_at,
     )
 
 

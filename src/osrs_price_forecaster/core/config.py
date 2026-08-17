@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         alias="OSRS_WIKI_BASE_URL",
     )
     osrs_wiki_user_agent: str = Field(
-        default="osrs-price-forecaster/0.1 (contact: replace-me@example.com)",
+        default="osrs-price-forecaster/0.3.0-alpha (contact: replace-me@example.com)",
         alias="OSRS_WIKI_USER_AGENT",
     )
 
@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     http_backoff_base_seconds: float = Field(default=0.25, alias="HTTP_BACKOFF_BASE_SECONDS")
 
     collector_interval_seconds: int = Field(default=300, alias="COLLECTOR_INTERVAL_SECONDS")
+    operational_freshness_warning_minutes: int = Field(
+        default=90, gt=0, alias="OPERATIONAL_FRESHNESS_WARNING_MINUTES"
+    )
+    operational_freshness_stale_minutes: int = Field(
+        default=180, gt=0, alias="OPERATIONAL_FRESHNESS_STALE_MINUTES"
+    )
     tracked_item_ids: list[int] = Field(
         default_factory=lambda: [4151, 11840], alias="TRACKED_ITEM_IDS"
     )
@@ -60,6 +66,15 @@ class Settings(BaseSettings):
         if isinstance(value, list):
             return [int(v) for v in value]
         raise ValueError("FORECAST_HORIZONS_HOURS must be a list[int] or comma-separated string")
+
+    @model_validator(mode="after")
+    def validate_operational_freshness_thresholds(self) -> "Settings":
+        if self.operational_freshness_warning_minutes >= self.operational_freshness_stale_minutes:
+            raise ValueError(
+                "OPERATIONAL_FRESHNESS_WARNING_MINUTES must be less than "
+                "OPERATIONAL_FRESHNESS_STALE_MINUTES"
+            )
+        return self
 
 
 @lru_cache(maxsize=1)

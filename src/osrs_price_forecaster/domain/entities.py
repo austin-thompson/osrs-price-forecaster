@@ -35,6 +35,49 @@ class Watchlist:
 
 
 @dataclass(slots=True, frozen=True)
+class SavedAnalysisPreference:
+    id: int
+    name: str
+    horizon: ForecastHorizon
+    signal_labels: list[str]
+    liquidity_statuses: list[str]
+    drift_states: list[str]
+    top_n: int
+    watchlist_id: int | None
+    created_at: datetime
+
+    def __post_init__(self) -> None:
+        if self.id <= 0:
+            raise ValidationError("id must be positive")
+        if not self.name.strip() or len(self.name) > 128:
+            raise ValidationError("name must contain 1 to 128 characters")
+        if not 1 <= self.top_n <= 500:
+            raise ValidationError("top_n must be between 1 and 500")
+        if self.watchlist_id is not None and self.watchlist_id <= 0:
+            raise ValidationError("watchlist_id must be positive")
+        ensure_utc(self.created_at)
+
+        allowed_values = (
+            ("signal_labels", self.signal_labels, {"stable", "caution", "avoid"}),
+            (
+                "liquidity_statuses",
+                self.liquidity_statuses,
+                {"healthy", "risky", "unknown"},
+            ),
+            (
+                "drift_states",
+                self.drift_states,
+                {"improved", "stable", "worsened", "insufficient_history", "unknown"},
+            ),
+        )
+        for field_name, values, allowed in allowed_values:
+            if len(values) != len(set(values)):
+                raise ValidationError(f"{field_name} must not contain duplicates")
+            if any(value not in allowed for value in values):
+                raise ValidationError(f"{field_name} contains an unsupported value")
+
+
+@dataclass(slots=True, frozen=True)
 class PriceObservation:
     item_id: int
     interval: str

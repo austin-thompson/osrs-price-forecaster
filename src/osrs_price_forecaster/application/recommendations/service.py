@@ -2,7 +2,12 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from osrs_price_forecaster.application.synthesis.service import SynthesisService
-from osrs_price_forecaster.domain.repositories import ForecastRepository, ModelEvaluationRepository, ModelSelectionRepository
+from osrs_price_forecaster.domain.repositories import (
+    ForecastRepository,
+    ItemRepository,
+    ModelEvaluationRepository,
+    ModelSelectionRepository,
+)
 from osrs_price_forecaster.domain.value_objects import ForecastHorizon
 
 
@@ -25,9 +30,11 @@ class RecommendationService:
     forecast_repository: ForecastRepository
     evaluation_repository: ModelEvaluationRepository
     selection_repository: ModelSelectionRepository
-    item_repository: object | None = None
+    item_repository: ItemRepository | None = None
 
-    async def list_recommendations(self, *, horizon_hours: int, limit: int = 100) -> list[RecommendationItem]:
+    async def list_recommendations(
+        self, *, horizon_hours: int, limit: int = 100
+    ) -> list[RecommendationItem]:
         horizon = ForecastHorizon(hours=horizon_hours)
         items = []
         if self.item_repository is not None:
@@ -44,7 +51,9 @@ class RecommendationService:
         results: list[RecommendationItem] = []
         for item in items:
             summary = await synthesis_service.build_summary(item_id=item.item_id, horizon=horizon)
-            selection = await self.selection_repository.latest_selection(item_id=item.item_id, horizon=horizon)
+            selection = await self.selection_repository.latest_selection(
+                item_id=item.item_id, horizon=horizon
+            )
             results.append(
                 RecommendationItem(
                     item_id=item.item_id,
@@ -53,8 +62,12 @@ class RecommendationService:
                     score=summary.score,
                     reason_codes=summary.reason_codes,
                     guardrail_status="pass" if summary.signal_label == "stable" else "warn",
-                    champion_model_name=selection.selected_model_name if selection is not None else None,
-                    champion_model_version=selection.selected_model_version if selection is not None else None,
+                    champion_model_name=selection.selected_model_name
+                    if selection is not None
+                    else None,
+                    champion_model_version=selection.selected_model_version
+                    if selection is not None
+                    else None,
                     liquidity_status=summary.liquidity_status,
                     drift_state=summary.drift_state,
                 )
