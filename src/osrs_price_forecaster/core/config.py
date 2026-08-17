@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         alias="OSRS_WIKI_BASE_URL",
     )
     osrs_wiki_user_agent: str = Field(
-        default="osrs-price-forecaster/0.2.0-alpha (contact: replace-me@example.com)",
+        default="osrs-price-forecaster/0.3.0-alpha (contact: replace-me@example.com)",
         alias="OSRS_WIKI_USER_AGENT",
     )
 

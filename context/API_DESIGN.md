@@ -8,7 +8,7 @@
 
 ## Current API surface
 
-This snapshot reflects the implemented routes through Cycle 2 and the planned Cycle 3 extensions.
+This snapshot reflects the implemented routes through Cycle 3.
 
 Health (Phase 0 implementation):
 

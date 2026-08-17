@@ -85,17 +85,21 @@ The project now includes the first analyst-facing MVP slices for the later roadm
 
 - Phase 5: ranking and recommendation endpoints now expose synthesis-backed scores, signal labels, reason codes, and champion-model metadata, with filters for signal, liquidity, drift, and top-N selection.
 - Phase 6: analysis-summary and cohort-comparison endpoints surface current signal state, supporting evidence, and side-by-side multi-item comparisons.
-- Phase 7: the operational-summary endpoint now reports service health, freshness status, warnings, and the latest ingested observation timestamp from persisted price data.
-- Phase 8: watchlists can now be created, listed, fetched, and deleted through persisted endpoints for simple saved-item workflows.
+- Phase 7: the operational-summary endpoint reports service health, configurable freshness status, stable warning codes, structured warning classifications, and the latest ingested observation timestamp.
+- Phase 8: persisted watchlists and saved-analysis preferences support reusable item sets, filters, horizons, and top-N choices.
+
+Cycle 3 completed on 2026-08-16 with live verification of saved preferences, enriched explanation
+and cohort responses, operational classifications, collection, forecasting, and persistence. See
+[context/cycles/cycle3.md](context/cycles/cycle3.md) and [context/TESTING.md](context/TESTING.md).
 
 ## Remaining work in the Phase 5-8 MVP implementation
 
 These slices remain intentionally narrow, but the core analyst-facing contract is now in place:
 
 - Phase 5: continue expanding portfolio-style ranking behavior and richer watchlist workflows.
-- Phase 6: add deeper comparison and benchmark-history context where it improves analyst workflows.
+- Phase 6: add benchmark-history context where it materially improves analyst workflows.
 - Phase 7: keep observability coverage aligned with ingestion health as the data pipeline evolves.
-- Phase 8: add saved filters, horizon preferences, and local annotations while keeping the experience single-user and local-first.
+- Phase 8: consider local annotations while keeping personalization single-user and local-first.
 
 ## Contribution guidelines
 

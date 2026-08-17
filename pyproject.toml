@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "osrs-price-forecaster"
-version = "0.2.0a0"
+version = "0.3.0a0"
 description = "Local-first OSRS Grand Exchange price tracking and forecasting foundation"
 readme = "README.md"
 requires-python = ">=3.12"

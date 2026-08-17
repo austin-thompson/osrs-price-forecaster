@@ -38,22 +38,22 @@ The current MVP focus remains:
 The current implementation has completed the initial MVP slices for the later analyst-facing phases:
 
 - Phase 5: ranking and recommendation outputs now expose synthesis-backed scores, signal labels, reason codes, and champion-model metadata for requested horizons.
-- Phase 6: analysis-summary and cohort-comparison endpoints now provide compact signal views and side-by-side multi-item comparisons.
-- Phase 7: the operational-summary endpoint now exposes service health, freshness status, warnings, and the latest ingested observation timestamp from persisted price data.
-- Phase 8: watchlists can now be created, listed, fetched, and deleted through a simple persisted endpoint set.
+- Phase 6: analysis-summary, enriched explanation, and cohort-comparison endpoints provide compact signal views, evidence narratives, and side-by-side comparisons.
+- Phase 7: the operational-summary endpoint exposes service health, configurable freshness status, stable warning codes, structured warning classifications, and the latest ingested observation timestamp.
+- Phase 8: persisted watchlists and saved-analysis preferences provide reusable item sets, filters, horizons, and top-N choices.
 
 What remains beyond these first slices:
 
 - Phase 5 still benefits from richer portfolio-style ranking behavior and more sophisticated watchlist workflows.
-- Phase 6 still needs deeper comparison, benchmark-history, and explanation workflows beyond the current single-item and cohort views.
-- Phase 7 can continue to expand as operational monitoring needs mature, especially around configurable thresholds and richer warning states.
-- Phase 8 now supports the initial persisted watchlist CRUD surface; the remaining work is richer personalization through saved filters, horizon preferences, and local annotations.
+- Phase 6 can still benefit from benchmark-history workflows beyond the current single-item and cohort views.
+- Phase 7 can expand only as concrete operational monitoring needs emerge.
+- Phase 8 may later add local annotations without introducing accounts or collaboration.
 
 The next expansion phases are intended to improve usability and comparability for analysts, not to broaden the product into unrelated experiences. The current Phase 5-8 slices keep the scope tight while proving the API contract for ranking, analysis summaries, operational visibility, and simple saved watchlists without drifting into UI polish or speculative features. While the MVP is still being completed, future phase design should stay tightly scoped to transparent forecasting, ranking, explainability, reliability, and lightweight personalization work.
 
 ## Cycle 3 product boundary
 
-Cycle 3 adds reusable saved-analysis preferences, clearer evidence narratives, and more actionable
+Cycle 3 delivered reusable saved-analysis preferences, clearer evidence narratives, and more actionable
 operational status. Saved preferences configure existing ranking workflows; they do not introduce a
 generic settings platform, user accounts, collaboration, or automatic execution. The first contract
 supports a saved name, horizon, ranking filters, top-N limit, and an optional watchlist reference.

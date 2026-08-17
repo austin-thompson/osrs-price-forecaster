@@ -94,7 +94,7 @@ classified operational warnings. Live verification covered the full local stack,
 and forecasting, representative Cycle 3 APIs, database persistence, and cleanup of temporary data.
 
 Detailed runtime results are recorded in `TESTING.md` under “Cycle 3 Live Verification
-(2026-08-16).” The branch is ready for review; merge and release remain separate actions.
+(2026-08-16).” The completed cycle is the basis for the `v0.3.0-alpha` preview release.
 
 ## Saved-preference contract decision
 
