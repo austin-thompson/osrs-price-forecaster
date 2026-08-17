@@ -100,8 +100,14 @@ Shared rules:
 Phase 7 operational routes:
 
 - GET /api/v1/operational-summary
-  - Returns generated_at, service_status, freshness_status, warnings, and latest_ingested_at.
+  - Returns generated_at, service_status, freshness_status, warnings, warning_details, and
+    latest_ingested_at.
   - Freshness is derived from the newest persisted price observation timestamp.
+  - `warnings` remains the stable code list. Each matching `warning_details` entry adds category,
+    severity, and a concise operator message.
+  - `no_price_observations` is classified as `data_availability/error`; `ingestion_delay` as
+    `ingestion_freshness/warning`; and `stale_ingestion` as `ingestion_freshness/error`.
+  - Signal-quality reason codes belong to synthesis endpoints and are not operational warnings.
 
 Cycle 3 saved-analysis routes:
 

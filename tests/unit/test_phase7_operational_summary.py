@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,6 +58,14 @@ def test_operational_summary_endpoint_returns_health_and_warnings(monkeypatch: A
         "service_status": "ok",
         "freshness_status": "healthy",
         "warnings": ["stale_ingestion"],
+        "warning_details": [
+            {
+                "code": "stale_ingestion",
+                "category": "ingestion_freshness",
+                "severity": "error",
+                "message": "The latest price ingestion is stale.",
+            }
+        ],
         "latest_ingested_at": datetime.now(UTC),
     }
 
@@ -75,6 +84,8 @@ def test_operational_summary_endpoint_returns_health_and_warnings(monkeypatch: A
     assert payload["service_status"] == "ok"
     assert payload["freshness_status"] == "healthy"
     assert payload["warnings"] == ["stale_ingestion"]
+    assert payload["warning_details"][0]["category"] == "ingestion_freshness"
+    assert payload["warning_details"][0]["severity"] == "error"
 
 
 async def test_operational_service_uses_latest_observation_freshness(monkeypatch: Any) -> None:
@@ -100,6 +111,8 @@ async def test_operational_service_uses_latest_observation_freshness(monkeypatch
     assert status.freshness_status == "stale"
     assert status.service_status == "degraded"
     assert "stale_ingestion" in status.warnings
+    assert status.warning_details[0].category == "ingestion_freshness"
+    assert status.warning_details[0].severity == "error"
 
 
 async def test_operational_service_uses_configured_freshness_thresholds(
@@ -131,3 +144,72 @@ async def test_operational_service_uses_configured_freshness_thresholds(
 
     assert status.freshness_status == "stale"
     assert status.warnings == ["stale_ingestion"]
+
+
+@pytest.mark.parametrize(
+    ("age_minutes", "expected_freshness", "expected_code", "expected_severity"),
+    [
+        (89, "healthy", None, None),
+        (90, "warning", "ingestion_delay", "warning"),
+        (179, "warning", "ingestion_delay", "warning"),
+        (180, "stale", "stale_ingestion", "error"),
+    ],
+)
+async def test_operational_freshness_boundaries_are_stable(
+    monkeypatch: Any,
+    age_minutes: int,
+    expected_freshness: str,
+    expected_code: str | None,
+    expected_severity: str | None,
+) -> None:
+    now = datetime(2026, 8, 16, 12, 0, tzinfo=UTC)
+    fake_session = FakeSessionWithLatestObservation(now - timedelta(minutes=age_minutes))
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.select",
+        lambda *args, **kwargs: FakeQuery(),
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.desc",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.PriceObservationModel",
+        type("PriceObservationModel", (), {"ingested_at": object()}),
+    )
+
+    status = await OperationalService(
+        session=cast(AsyncSession, fake_session), now_provider=lambda: now
+    ).build_status()
+
+    assert status.freshness_status == expected_freshness
+    assert status.service_status == ("ok" if expected_code is None else "degraded")
+    assert status.warnings == ([] if expected_code is None else [expected_code])
+    assert [warning.severity for warning in status.warning_details] == (
+        [] if expected_severity is None else [expected_severity]
+    )
+
+
+async def test_operational_missing_data_has_availability_classification(
+    monkeypatch: Any,
+) -> None:
+    fake_session = FakeSessionWithLatestObservation(None)
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.select",
+        lambda *args, **kwargs: FakeQuery(),
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.desc",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "osrs_price_forecaster.api.routes.v1.PriceObservationModel",
+        type("PriceObservationModel", (), {"ingested_at": object()}),
+    )
+
+    status = await OperationalService(session=cast(AsyncSession, fake_session)).build_status()
+
+    assert status.warnings == ["no_price_observations"]
+    assert status.warning_details[0].category == "data_availability"
+    assert status.warning_details[0].severity == "error"

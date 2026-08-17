@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -54,12 +55,28 @@ def _matches_recommendation_filters(
 
 
 @dataclass(slots=True)
+class OperationalWarning:
+    code: str
+    category: str
+    severity: str
+    message: str
+
+
+@dataclass(slots=True)
 class OperationalSummary:
     generated_at: datetime
     service_status: str
     freshness_status: str
     warnings: list[str]
+    warning_details: list[OperationalWarning]
     latest_ingested_at: datetime | None
+
+
+class OperationalWarningResponse(BaseModel):
+    code: str
+    category: Literal["data_availability", "ingestion_freshness"]
+    severity: Literal["warning", "error"]
+    message: str
 
 
 class OperationalSummaryResponse(BaseModel):
@@ -67,6 +84,7 @@ class OperationalSummaryResponse(BaseModel):
     service_status: str
     freshness_status: str
     warnings: list[str]
+    warning_details: list[OperationalWarningResponse]
     latest_ingested_at: datetime | None
 
 
@@ -830,6 +848,9 @@ async def operational_summary(
         freshness_stale_minutes=settings.operational_freshness_stale_minutes,
     )
     status = await service.build_status()
+    warning_details = (
+        status.get("warning_details", []) if isinstance(status, dict) else status.warning_details
+    )
     return OperationalSummaryResponse(
         generated_at=status["generated_at"] if isinstance(status, dict) else status.generated_at,
         service_status=status["service_status"]
@@ -839,6 +860,10 @@ async def operational_summary(
         if isinstance(status, dict)
         else status.freshness_status,
         warnings=status["warnings"] if isinstance(status, dict) else status.warnings,
+        warning_details=[
+            OperationalWarningResponse.model_validate(warning, from_attributes=True)
+            for warning in warning_details
+        ],
         latest_ingested_at=status["latest_ingested_at"]
         if isinstance(status, dict)
         else status.latest_ingested_at,
@@ -852,10 +877,12 @@ class OperationalService:
         session: AsyncSession,
         freshness_warning_minutes: int = 90,
         freshness_stale_minutes: int = 180,
+        now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         self.session = session
         self.freshness_warning_minutes = freshness_warning_minutes
         self.freshness_stale_minutes = freshness_stale_minutes
+        self.now_provider = now_provider or (lambda: datetime.now(UTC))
 
     async def build_status(self) -> OperationalSummary:
         stmt = (
@@ -867,29 +894,55 @@ class OperationalService:
 
         if latest_row is None:
             return OperationalSummary(
-                generated_at=datetime.now(UTC),
+                generated_at=self.now_provider(),
                 service_status="degraded",
                 freshness_status="stale",
                 warnings=["no_price_observations"],
+                warning_details=[
+                    OperationalWarning(
+                        code="no_price_observations",
+                        category="data_availability",
+                        severity="error",
+                        message="No price observations are available.",
+                    )
+                ],
                 latest_ingested_at=None,
             )
 
         latest_ingested_at = latest_row
         freshness_status = "healthy"
         warnings: list[str] = []
-        age_minutes = int((datetime.now(UTC) - latest_ingested_at).total_seconds() // 60)
+        warning_details: list[OperationalWarning] = []
+        age_minutes = int((self.now_provider() - latest_ingested_at).total_seconds() // 60)
         if age_minutes >= self.freshness_stale_minutes:
             freshness_status = "stale"
             warnings.append("stale_ingestion")
+            warning_details.append(
+                OperationalWarning(
+                    code="stale_ingestion",
+                    category="ingestion_freshness",
+                    severity="error",
+                    message="The latest price ingestion is stale.",
+                )
+            )
         elif age_minutes >= self.freshness_warning_minutes:
             freshness_status = "warning"
             warnings.append("ingestion_delay")
+            warning_details.append(
+                OperationalWarning(
+                    code="ingestion_delay",
+                    category="ingestion_freshness",
+                    severity="warning",
+                    message="The latest price ingestion is delayed.",
+                )
+            )
 
         return OperationalSummary(
-            generated_at=datetime.now(UTC),
+            generated_at=self.now_provider(),
             service_status="ok" if not warnings else "degraded",
             freshness_status=freshness_status,
             warnings=warnings,
+            warning_details=warning_details,
             latest_ingested_at=latest_ingested_at,
         )
 
